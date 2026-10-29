@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH, COIN_DASH_DIFFICULTY, COIN_DASH_SCREENS, DifficultySelect,
+/* global Phaser, COIN_DASH, COIN_DASH_ENEMIES, COIN_DASH_DIFFICULTY, COIN_DASH_SCREENS, DifficultySelect,
    PauseController, CoinDashEffects, CoinDashCombo */
 const sfx = () => window.CoinDashSound || {};
 class CoinDash extends Phaser.Scene {
@@ -48,10 +48,18 @@ class CoinDash extends Phaser.Scene {
     this.physics.add.existing(this.coin);
     this.coin.body.setCircle(9);
     this.placeCoin();
-    this.drones = this.physics.add.group();
-    for (let i = 0; i < c.droneCount; i++) {
-      this.spawnDrone(90 + i * 270, 100, (35 + i * 105) * Math.PI / 180);
-    }
+    // Enemies are managed by enemies.js; the schedule in settings introduces
+    // each type over the round. The difficulty multiplier scales every enemy
+    // type, and each level up scales it further (see onLevelChange).
+    // this.drones stays the group used for collisions.
+    this.enemyModeSpeed = COIN_DASH_DIFFICULTY.multiplier();
+    this.enemies = COIN_DASH_ENEMIES.createEnemyManager(this, {
+      player: this.player,
+      modifiers: { speed: this.enemyModeSpeed * this.levelDifficulty.droneSpeedMultiplier }
+    });
+    this.drones = this.enemies.group;
+    this.events.on('enemy-type-introduced', (type, label) => this.announce(`${label} incoming!`));
+    this.events.once('shutdown', () => this.events.off('enemy-type-introduced'));
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.collectCoin();
@@ -61,13 +69,13 @@ class CoinDash extends Phaser.Scene {
       if (this.coins % 10 === 0) sfx().milestone?.(); else sfx().coin?.();
       this.placeCoin();
     });
-    this.physics.add.overlap(this.player, this.drones, () => {
+    this.physics.add.overlap(this.player, this.drones, (player, enemy) => {
       if (!this.finished) {
         this.effects.playerHit(this.player.x, this.player.y);
         sfx().hit?.();
       }
-      this.finish('A drone caught you!');
-    });
+      this.finish(`${this.enemies.describe(enemy)} caught you!`);
+    }, (player, enemy) => this.enemies.isArmed(enemy));
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
@@ -101,52 +109,26 @@ class CoinDash extends Phaser.Scene {
     this.levelBar.width = 180 * (into / lv.coinsPerLevel);
   }
 
-  /** Current enemy speed: base speed, scaled by the chosen difficulty mode, then by the level. */
-  droneSpeed() {
-    const base = COIN_DASH.droneSpeed;
-    const modeSpeed = window.COIN_DASH_DIFFICULTY ? COIN_DASH_DIFFICULTY.enemySpeed(base) : base;
-    return modeSpeed * this.levelDifficulty.droneSpeedMultiplier;
-  }
-
-  spawnDrone(x, y, angle, speed = this.droneSpeed()) {
-    const drone = this.add.rectangle(x, y, 26, 26, COIN_DASH.colors.drone);
-    this.drones.add(drone);
-    drone.body.setCollideWorldBounds(true).setBounce(1, 1);
-    drone.body.setVelocity(Math.cos(angle) * speed, Math.sin(angle) * speed);
-    return drone;
-  }
-
-  /** A random point in the arena at least `minDistance` away from the player. */
-  safeSpawnPoint(minDistance = 170) {
-    const c = COIN_DASH;
-    let x, y, tries = 0;
-    do {
-      x = Phaser.Math.Between(30, c.width - 30);
-      y = Phaser.Math.Between(75, c.height - 30);
-    } while (Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y) < minDistance && ++tries < 50);
-    return { x, y };
+  /** Enemy type a level up adds: plain drones first, then chasers and speeders alternate. */
+  levelUpEnemyType(level) {
+    const types = this.enemies.types;
+    if (level < 4) return types.DRONE;
+    return level % 2 === 0 ? types.SPEED : types.CHASER;
   }
 
   /** Called by the level manager every time the level advances. */
   onLevelChange({ level, previousLevel, difficulty }) {
-    const c = COIN_DASH;
+    const previous = this.levelDifficulty;
     this.levelDifficulty = difficulty;
     this.refreshLevelHud();
     // Bonus time for finishing a level.
     if (difficulty.timeBonusSeconds) this.deadline += difficulty.timeBonusSeconds * 1000;
-    // Speed up existing enemies, keeping their direction.
-    const speed = this.droneSpeed();
-    this.drones.getChildren().forEach((d) => {
-      if (!d.body) return;
-      if (d.body.velocity.length() > 0) d.body.velocity.setLength(speed);
-      else d.body.velocity.setToPolar(Phaser.Math.FloatBetween(0, Math.PI * 2), speed); // a stalled drone gets moving
-    });
-    // Add enemies, spawned away from the player so a level up is never an instant death.
-    const target = Math.min(difficulty.maxDrones, c.droneCount + difficulty.extraDrones);
-    while (this.drones.getLength() < target) {
-      const { x, y } = this.safeSpawnPoint();
-      this.spawnDrone(x, y, Phaser.Math.FloatBetween(0, Math.PI * 2), speed);
-    }
+    // Every enemy type speeds up: difficulty mode multiplier x level multiplier.
+    this.enemies.setDifficulty({ speed: this.enemyModeSpeed * difficulty.droneSpeedMultiplier });
+    // Extra enemies through the manager: it keeps them away from the player, gives them a
+    // harmless fade-in and enforces the global cap, so a level up is never an instant death.
+    const toAdd = difficulty.extraDrones - (previous ? previous.extraDrones : 0);
+    for (let i = 0; i < toAdd; i++) this.enemies.spawn(this.levelUpEnemyType(level));
     this.showLevelUp(level);
     // Scene-level event so other modules (enemies, arenas, boss...) can react:
     //   scene.events.on('levelchange', ({ level, difficulty }) => ...)
@@ -171,6 +153,16 @@ class CoinDash extends Phaser.Scene {
     this.tweens.add({
       targets: [label, hint], alpha: 0, y: '-=70', delay: 1100, duration: 550, ease: 'Quad.In',
       onComplete: () => { label.destroy(); hint.destroy(); }
+    });
+  }
+
+  announce(message) {
+    const c = COIN_DASH;
+    const text = this.add.text(c.width / 2, 70, message,
+      { font: '20px monospace', color: '#ffffff' }).setOrigin(0.5).setAlpha(0);
+    this.tweens.add({
+      targets: text, alpha: { from: 0, to: 1 }, y: 60, duration: 250, yoyo: true, hold: 900,
+      onComplete: () => text.destroy()
     });
   }
 
@@ -225,7 +217,9 @@ class CoinDash extends Phaser.Scene {
 
   update(time, delta) {
     if (this.finished || this.pauser.paused) return;
-    // Advance by frame delta (not absolute time) so the combo freezes while the scene is paused.
+    // Enemies and the combo advance by frame delta (not absolute time) so both
+    // freeze while the scene is paused.
+    this.enemies.update(time, delta);
     this.combo.update(delta);
     this.updateComboHud();
     const dx = Number(this.cursors.right.isDown || this.keys.D.isDown)
