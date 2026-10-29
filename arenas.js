@@ -6,21 +6,24 @@
 //   this.arena = new ArenaManager(this);      // draws the starting arena
 //   this.setArena(1);                         // jump to NEON CITY (0 = CLASSIC, 2 = LAVA ZONE)
 //   this.nextArena();                         // cycle to the next arena
-//   this.events.emit('level-changed', level); // a level system can drive arenas with this event
+//   this.events.emit('levelchange', { level }); // the level system (levels.js) emits this on level up
 //
-// Until a level system is merged, arenas also cycle every `fallbackCoinsPerArena` coins
-// (set it to 0 to disable) and the N key cycles manually.
+// With levels.js present, the arena changes on every level up (arena = (level - 1) % 3).
+// Without it, arenas cycle every `fallbackCoinsPerArena` coins (0 disables) and the N key
+// cycles manually. Walls of `wallThickness` px line the play field; the physics world bounds
+// are inset to their inner face so the player and drones stop against them.
 (function () {
   const defaults = {
     startIndex: 0,
     fallbackCoinsPerArena: 5,
     nameDuration: 1500,
     transitionDuration: 420,
-    cycleKey: 'N'
+    cycleKey: 'N',
+    wallThickness: 12
   };
   window.COIN_DASH.arenas = Object.assign({}, defaults, window.COIN_DASH.arenas);
 
-  const DEPTH = { background: -30, decor: -20, border: -10, haze: 30, overlay: 40, label: 50 };
+  const DEPTH = { background: -30, decor: -20, border: -10, walls: -5, haze: 30, overlay: 40, label: 50 };
   const TWO_PI = Math.PI * 2;
 
   function lerpColor(a, b, t) {
@@ -41,6 +44,38 @@
     }
   }
 
+  // The four wall rectangles lining the play field (HUD strip at the top stays clear).
+  function wallRects() {
+    const c = COIN_DASH, t = COIN_DASH.arenas.wallThickness, top = 44;
+    return [
+      { x: 0, y: top, w: c.width, h: t },                    // top
+      { x: 0, y: c.height - t, w: c.width, h: t },           // bottom
+      { x: 0, y: top, w: t, h: c.height - top },             // left
+      { x: c.width - t, y: top, w: t, h: c.height - top }    // right
+    ];
+  }
+
+  // Strokes the inner face of the walls (the edge the player bumps into).
+  function innerFace(gfx, width, color, alpha) {
+    const c = COIN_DASH, t = COIN_DASH.arenas.wallThickness;
+    gfx.lineStyle(width, color, alpha);
+    gfx.strokeRect(t, 44 + t, c.width - 2 * t, c.height - 44 - 2 * t);
+  }
+
+  // Solid wall blocks with a bevelled inner edge and joints every `seg` px.
+  function drawWalls(gfx, fill, edge, joint, seg) {
+    const c = COIN_DASH, t = COIN_DASH.arenas.wallThickness;
+    for (const r of wallRects()) { gfx.fillStyle(fill, 1); gfx.fillRect(r.x, r.y, r.w, r.h); }
+    innerFace(gfx, 2, edge, 0.9);
+    gfx.lineStyle(1, joint, 0.5);
+    for (let x = seg; x < c.width; x += seg) {
+      gfx.lineBetween(x, 44, x, 44 + t); gfx.lineBetween(x, c.height - t, x, c.height);
+    }
+    for (let y = 44 + seg; y < c.height; y += seg) {
+      gfx.lineBetween(0, y, t, y); gfx.lineBetween(c.width - t, y, c.width, y);
+    }
+  }
+
   // ---------------------------------------------------------------- ARENA 1: CLASSIC
   const CLASSIC = {
     name: 'CLASSIC',
@@ -53,6 +88,9 @@
       // Identical to the original Coin Dash backdrop.
       m.keep(m.scene.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
         c.colors.background, 1, 0x24334b, 0.45).setDepth(DEPTH.background));
+      // Plain slate walls in the original palette.
+      const w = m.keep(m.scene.add.graphics().setDepth(DEPTH.walls));
+      drawWalls(w, 0x24334b, 0x4a5f85, 0x101c31, 40);
     },
     update() {}
   };
@@ -69,6 +107,9 @@
       m.lights = m.keep(s.add.graphics().setDepth(DEPTH.background).setBlendMode(Phaser.BlendModes.ADD));
       m.grid = m.keep(s.add.graphics().setDepth(DEPTH.decor));
       m.border = m.keep(s.add.graphics().setDepth(DEPTH.border));
+      m.walls = m.keep(s.add.graphics().setDepth(DEPTH.walls));
+      drawWalls(m.walls, 0x0b0d1f, 0x312e81, 0x1e1b4b, 80);
+      m.wallGlow = m.keep(s.add.graphics().setDepth(DEPTH.walls));
       m.lightSpots = [
         { x: 0.2, y: 0.3, r: 150, color: 0x3b82f6, speed: 0.11, phase: 0 },
         { x: 0.75, y: 0.65, r: 180, color: 0x7c3aed, speed: 0.08, phase: 2.1 },
@@ -114,6 +155,14 @@
       glowBorder(b, lerpColor(0x3b82f6, 0xa855f7, pulse), 0.75 + 0.25 * pulse, 4);
       b.lineStyle(1, 0xe9d5ff, 0.5 + 0.3 * pulse);
       b.strokeRoundedRect(3, 3, c.width - 6, c.height - 6, 6);
+
+      // Neon tube running along the inner face of the walls.
+      const wg = m.wallGlow;
+      wg.clear();
+      const tube = lerpColor(0xa855f7, 0x3b82f6, pulse);
+      innerFace(wg, 6, tube, 0.18 + 0.1 * pulse);
+      innerFace(wg, 2, tube, 0.9);
+      innerFace(wg, 1, 0xffffff, 0.35 + 0.25 * pulse);
     }
   };
 
@@ -132,6 +181,9 @@
       m.pools = m.keep(s.add.graphics().setDepth(DEPTH.decor).setBlendMode(Phaser.BlendModes.ADD));
       m.embers = m.keep(s.add.graphics().setDepth(DEPTH.decor));
       m.border = m.keep(s.add.graphics().setDepth(DEPTH.border));
+      m.walls = m.keep(s.add.graphics().setDepth(DEPTH.walls));
+      drawWalls(m.walls, 0x2a0c0a, 0x7f1d1d, 0x1a0606, 60);
+      m.wallGlow = m.keep(s.add.graphics().setDepth(DEPTH.walls));
       m.haze = m.keep(s.add.rectangle(c.width / 2, c.height / 2, c.width, c.height, 0xf97316, 0.04)
         .setDepth(DEPTH.haze).setBlendMode(Phaser.BlendModes.ADD));
 
@@ -213,6 +265,12 @@
       glowBorder(b, lerpColor(0xdc2626, 0xf97316, flicker), 0.8 + 0.2 * flicker, 4);
       b.lineStyle(1, 0xfde68a, 0.45 + 0.35 * flicker);
       b.strokeRoundedRect(3, 3, c.width - 6, c.height - 6, 6);
+
+      // Molten seam glowing along the inner face of the rock walls.
+      const wg = m.wallGlow;
+      wg.clear();
+      innerFace(wg, 6, 0xea580c, 0.15 + 0.15 * flicker);
+      innerFace(wg, 2, lerpColor(0xf97316, 0xfbbf24, flicker), 0.85);
     }
   };
 
@@ -226,15 +284,22 @@
       this.objects = [];
       this.elapsed = 0;
       this.switching = false;
-      this.externallyDriven = false; // true once a level system takes over
+      // With a level system (levels.js) the arena follows the level; the coin fallback is off.
+      this.externallyDriven = !!(scene.levels || window.CoinDashLevels);
       this.lastScore = scene.score || 0;
 
       const cfg = COIN_DASH.arenas;
       scene.setArena = (i, opts) => this.setArena(i, opts);
       scene.nextArena = () => this.next();
       scene.events.on('update', this.update, this);
-      scene.events.on('level-changed', this.onLevelChanged, this);
+      scene.events.on('levelchange', this.onLevelChanged, this);   // emitted by levels.js integration
+      scene.events.on('level-changed', this.onLevelChanged, this); // generic alias
       scene.events.once('shutdown', this.destroy, this);
+      // Physics world bounds hug the inner face of the walls (same inset for every arena).
+      const t = cfg.wallThickness;
+      if (t > 0 && scene.physics && scene.physics.world) {
+        scene.physics.world.setBounds(t, 44 + t, COIN_DASH.width - 2 * t, COIN_DASH.height - 44 - 2 * t);
+      }
       if (cfg.cycleKey && scene.input.keyboard) {
         this.keyHandler = () => this.next();
         scene.input.keyboard.on('keydown-' + cfg.cycleKey, this.keyHandler);
@@ -300,11 +365,12 @@
     showName() {
       const c = COIN_DASH;
       const hold = COIN_DASH.arenas.nameDuration;
-      const style = { font: 'bold 44px monospace', color: this.theme.accent, align: 'center',
+      const style = { font: 'bold 36px monospace', color: this.theme.accent, align: 'center',
         stroke: '#000000', strokeThickness: 6 };
-      const title = this.scene.add.text(c.width / 2, c.height / 2 - 10, this.theme.name, style)
+      // Lower third of the field, clear of the centred "LEVEL UP!" label from levels.js.
+      const title = this.scene.add.text(c.width / 2, c.height - 92, this.theme.name, style)
         .setOrigin(0.5).setDepth(DEPTH.label).setAlpha(0).setScale(0.7);
-      const sub = this.scene.add.text(c.width / 2, c.height / 2 + 30, `ARENA ${this.index + 1}`,
+      const sub = this.scene.add.text(c.width / 2, c.height - 60, `ARENA ${this.index + 1}`,
         { font: '16px monospace', color: '#ffffff', stroke: '#000000', strokeThickness: 4 })
         .setOrigin(0.5).setDepth(DEPTH.label).setAlpha(0);
       this.scene.tweens.add({ targets: [title, sub], alpha: 1, duration: 250, ease: 'Quad.easeOut' });
@@ -338,6 +404,7 @@
     destroy() {
       const s = this.scene;
       s.events.off('update', this.update, this);
+      s.events.off('levelchange', this.onLevelChanged, this);
       s.events.off('level-changed', this.onLevelChanged, this);
       if (this.keyHandler && s.input.keyboard) {
         s.input.keyboard.off('keydown-' + COIN_DASH.arenas.cycleKey, this.keyHandler);
