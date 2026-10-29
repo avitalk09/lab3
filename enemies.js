@@ -72,6 +72,11 @@
   const DEG = Math.PI / 180;
 
   function clamp(v, lo, hi) { return v < lo ? lo : (v > hi ? hi : v); }
+  // scene.time.now is stale during create() when a scene is started from
+  // another scene (menu, game over), so prefer the live game loop clock.
+  function nowOf(scene) {
+    return scene.game && scene.game.loop && scene.game.loop.time != null ? scene.game.loop.time : scene.time.now;
+  }
   function randomBetween(lo, hi) { return lo + Math.random() * (hi - lo); }
   function distanceSq(ax, ay, bx, by) { const dx = ax - bx, dy = ay - by; return dx * dx + dy * dy; }
 
@@ -279,7 +284,7 @@
     );
     const group = options.group || scene.physics.add.group();
     const player = options.player || null;
-    const startTime = options.startTime != null ? options.startTime : scene.time.now;
+    const startTime = options.startTime != null ? options.startTime : nowOf(scene);
     let modifiers = normaliseModifiers(
       options.modifiers || (settings.difficulty && settings.difficulty.enemies) || settings.enemyModifiers
     );
@@ -363,7 +368,7 @@
         baseSpeed: cfg.speed,
         speed: cfg.speed * modifiers.speed,
         heading: opts.heading,
-        armedAt: scene.time.now + (opts.graceMs != null ? opts.graceMs : config.spawnGraceMs)
+        armedAt: nowOf(scene) + (opts.graceMs != null ? opts.graceMs : config.spawnGraceMs)
       };
 
       let x = opts.x, y = opts.y;
@@ -397,10 +402,10 @@
       if (behavior.init) behavior.init(enemy, state, ctx);
 
       // Spawn telegraph: fade and grow in while harmless.
-      if (scene.tweens && typeof scene.tweens.add === 'function' && state.armedAt > scene.time.now) {
+      if (scene.tweens && typeof scene.tweens.add === 'function' && state.armedAt > nowOf(scene)) {
         enemy.setAlpha(0.25);
         enemy.setScale(0.4);
-        scene.tweens.add({ targets: enemy, alpha: 1, scale: 1, duration: state.armedAt - scene.time.now, ease: 'Quad.out' });
+        scene.tweens.add({ targets: enemy, alpha: 1, scale: 1, duration: state.armedAt - nowOf(scene), ease: 'Quad.out' });
       }
 
       spawnedByType[type] = typeIndex + 1;
@@ -494,7 +499,7 @@
     function getModifiers() { return Object.assign({}, modifiers); }
 
     function isArmed(enemy) {
-      return !!(enemy && enemy.enemyState) && scene.time.now >= enemy.enemyState.armedAt;
+      return !!(enemy && enemy.enemyState) && nowOf(scene) >= enemy.enemyState.armedAt;
     }
 
     function describe(enemy) {

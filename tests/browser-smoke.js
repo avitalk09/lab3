@@ -56,17 +56,22 @@ async function main() {
     await send('Runtime.enable'); await send('Page.enable');
     await send('Page.navigate', { url: URL });
     await sleep(1500);
+    // Sit on the start menu for a while: the round schedule must still start from zero.
+    check(await evaluate('window.coinDashGame.scene.isActive("Menu")'), 'start menu is showing first');
+    await sleep(3000);
+    await evaluate('window.coinDashGame.scene.getScene("Menu").scene.start("CoinDash"); true');
+    await sleep(300);
 
     // Helpers evaluated inside the page.
     await evaluate(`
-      window.__scene = () => window.coinDashGame.scene.scenes[0];
+      window.__scene = () => window.coinDashGame.scene.getScene('CoinDash');
       window.__enemies = () => window.__scene().enemies.group.getChildren().filter(e => e.active).map(e => ({
         type: e.enemyState.type, x: e.x, y: e.y, vx: e.body.velocity.x, vy: e.body.velocity.y,
         w: e.width, h: e.height, color: e.fillColor
       }));
       window.__inside = () => { const b = window.__scene().physics.world.bounds; return window.__enemies().every(e =>
         e.x >= b.x - 1 && e.x <= b.x + b.width + 1 && e.y >= b.y - 1 && e.y <= b.y + b.height + 1); };
-      window.__texts = () => window.__scene().children.list.filter(o => o.type === 'Text').map(t => t.text);
+      window.__texts = key => window.coinDashGame.scene.getScene(key).children.list.filter(o => o.type === 'Text').map(t => t.text);
       // Auto-dodge: keep the player at the grid point farthest from every enemy
       // so the round survives long enough to see each type arrive.
       window.__dodge = setInterval(() => {
@@ -125,12 +130,14 @@ async function main() {
       s.player.setPosition(t.x, t.y); s.player.body.reset(t.x, t.y); })()`);
     await sleep(400);
     check(await evaluate('__scene().finished') === true, 'touching a patrol ends the round');
-    const texts = await evaluate('__texts()');
-    check(texts.some(t => t.includes('A patrol caught you!')), `end text names the enemy (${JSON.stringify(texts.slice(-1))})`);
+    await sleep(1200); // finish() hands off to the GameOver scene after 700 ms
+    check(await evaluate('window.coinDashGame.scene.isActive("GameOver")'), 'game over screen is showing');
+    const texts = await evaluate('__texts("GameOver")');
+    check(texts.some(t => t.includes('A PATROL CAUGHT YOU!')), `game over text names the enemy (${JSON.stringify(texts.slice(0, 3))})`);
     await shot('smoke-end.png');
 
-    // Restart must rebuild the roster and not stack event listeners.
-    await evaluate('__scene().scene.restart(); true');
+    // Playing again must rebuild the roster and not stack event listeners.
+    await evaluate('window.coinDashGame.scene.getScene("GameOver").scene.start("CoinDash"); true');
     await sleep(1200);
     e = await evaluate('__enemies()');
     check(e.length === 3 && e.every(x => x.type === 'drone'), 'after restart: three drones again');
