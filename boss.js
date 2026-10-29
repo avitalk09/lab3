@@ -142,6 +142,7 @@
       const s = this.scene, cfg = this.cfg;
       if (typeof cfg.getLevel === 'function') return Number(cfg.getLevel(s)) || 0;
       if (typeof s.level === 'number') return s.level;
+      if (s.levels && typeof s.levels.level === 'number') return s.levels.level; // levels.js manager
       const coins = typeof s.coins === 'number' ? s.coins : (s.score || 0); // coins, not combo points
       return Math.floor(coins / cfg.coinsPerLevel) + 1;
     }
@@ -163,6 +164,13 @@
     frozen() {
       const s = this.scene;
       return this.paused || s.finished || s.physics.world.isPaused || !!(s.pauser && s.pauser.paused);
+    }
+
+    // Physics world bounds (arenas.js may inset them with walls); falls back to the full field.
+    bounds() {
+      const w = this.scene.physics && this.scene.physics.world;
+      const c = window.COIN_DASH;
+      return (w && w.bounds) || { x: 0, y: HUD_HEIGHT, width: c.width, height: c.height - HUD_HEIGHT, right: c.width, bottom: c.height };
     }
 
     delayed(ms, fn) {
@@ -192,9 +200,9 @@
         p.y = this.eyeBase[i].y + Math.sin(angle) * 3;
       });
       // Safety net: anything that slipped past the world-bounds event disappears here.
-      const c = window.COIN_DASH;
+      const bd = this.bounds();
       this.projectiles.getChildren().slice().forEach((p) => {
-        if (p.x < -20 || p.x > c.width + 20 || p.y < HUD_HEIGHT - 20 || p.y > c.height + 20) p.destroy();
+        if (p.x < bd.x - 20 || p.x > bd.right + 20 || p.y < bd.y - 20 || p.y > bd.bottom + 20) p.destroy();
       });
     }
 
@@ -233,7 +241,8 @@
       this.pupils = this.eyeBase.map((e) => s.add.circle(e.x, e.y, size * 0.045, col.pupil));
       this.hull = hull;
 
-      const boss = s.add.container(c.width / 2, HUD_HEIGHT + size,
+      const bd = this.bounds();
+      const boss = s.add.container(bd.x + bd.width / 2, bd.y + size,
         [...this.rotors, hull, core, grill, ...this.eyeGlows, ...this.eyes, ...this.pupils]);
       boss.setSize(size, size).setDepth(5).setScale(0.1).setAlpha(0);
       s.physics.add.existing(boss);
@@ -268,9 +277,9 @@
     }
 
     launchProjectile(angle) {
-      const s = this.scene, c = window.COIN_DASH, cfg = this.cfg, boss = this.boss, r = cfg.projectileRadius;
-      const x = Phaser.Math.Clamp(boss.x + Math.cos(angle) * cfg.size * 0.6, r + 1, c.width - r - 1);
-      const y = Phaser.Math.Clamp(boss.y + Math.sin(angle) * cfg.size * 0.6, HUD_HEIGHT + r + 1, c.height - r - 1);
+      const s = this.scene, cfg = this.cfg, boss = this.boss, r = cfg.projectileRadius, bd = this.bounds();
+      const x = Phaser.Math.Clamp(boss.x + Math.cos(angle) * cfg.size * 0.6, bd.x + r + 1, bd.right - r - 1);
+      const y = Phaser.Math.Clamp(boss.y + Math.sin(angle) * cfg.size * 0.6, bd.y + r + 1, bd.bottom - r - 1);
       const p = s.add.circle(x, y, r, cfg.colors.projectile).setStrokeStyle(2, cfg.colors.projectileStroke).setDepth(4);
       p.setData('bossProjectile', true);
       this.projectiles.add(p);
@@ -313,11 +322,11 @@
 
     placeAttackCoin() {
       if (this.state !== 'active') return;
-      const c = window.COIN_DASH, coin = this.attackCoin;
+      const coin = this.attackCoin, bd = this.bounds();
       let x, y, tries = 0;
       do {
-        x = Phaser.Math.Between(40, c.width - 40);
-        y = Phaser.Math.Between(HUD_HEIGHT + 45, c.height - 40);
+        x = Phaser.Math.Between(bd.x + 40, bd.right - 40);
+        y = Phaser.Math.Between(bd.y + 45, bd.bottom - 40);
         tries++;
       } while (tries < 40 && (
         Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y) < 90 ||

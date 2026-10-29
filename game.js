@@ -1,5 +1,5 @@
 /* global Phaser, COIN_DASH, COIN_DASH_ENEMIES, COIN_DASH_DIFFICULTY, COIN_DASH_SCREENS, DifficultySelect,
-   PauseController, CoinDashEffects, CoinDashCombo */
+   PauseController, CoinDashEffects, CoinDashCombo, ArenaManager */
 const sfx = () => window.CoinDashSound || {};
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
@@ -24,8 +24,8 @@ class CoinDash extends Phaser.Scene {
     this.deadline = this.game.loop.time + c.roundSeconds * 1000;
     sfx().start?.();
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
-    this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
-      c.colors.background, 1, 0x24334b, 0.45);
+    // Arena visuals (background, borders, effects) live in arenas.js; see ArenaManager.
+    this.arena = new ArenaManager(this);
     this.effects = new CoinDashEffects(this);
     this.hud = this.add.text(18, 12, '', { font: '18px monospace', color: '#ffffff' });
     this.createComboHud();
