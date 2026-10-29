@@ -1,4 +1,5 @@
 /* global Phaser, COIN_DASH, PauseController */
+const sfx = () => window.CoinDashSound || {};
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -8,6 +9,7 @@ class CoinDash extends Phaser.Scene {
     this.finished = false;
     // The scene clock is stale until its first update, so read the live game loop time.
     this.deadline = this.game.loop.time + c.roundSeconds * 1000;
+    sfx().start?.();
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
@@ -33,10 +35,14 @@ class CoinDash extends Phaser.Scene {
       if (this.finished) return;
       this.score++;
       this.effects.coinCollected(this.coin.x, this.coin.y, c.colors.coin);
+      if (this.score % 10 === 0) sfx().milestone?.(); else sfx().coin?.();
       this.placeCoin();
     });
     this.physics.add.overlap(this.player, this.drones, () => {
-      if (!this.finished) this.effects.playerHit(this.player.x, this.player.y);
+      if (!this.finished) {
+        this.effects.playerHit(this.player.x, this.player.y);
+        sfx().hit?.();
+      }
       this.finish('A drone caught you!');
     });
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -72,6 +78,7 @@ class CoinDash extends Phaser.Scene {
     this.hud.setText(`Coins: ${this.score}                       Time: ${seconds}s`);
     if (seconds === 0) {
       this.effects.roundOver();
+      sfx().gameOver?.();
       this.finish('Time is up!');
     }
   }
