@@ -95,6 +95,8 @@ class CoinDash extends Phaser.Scene {
     const c = COIN_DASH;
     this.difficulty = difficulty;
     this.refreshLevelHud();
+    // Bonus time for finishing a level.
+    if (difficulty.timeBonusSeconds) this.deadline += difficulty.timeBonusSeconds * 1000;
     // Speed up existing enemies, keeping their direction.
     const speed = this.droneSpeed();
     this.drones.getChildren().forEach((d) => {
@@ -121,7 +123,8 @@ class CoinDash extends Phaser.Scene {
       align: 'center', lineSpacing: 6
     }).setOrigin(0.5).setScale(0.2).setAlpha(0).setDepth(10);
     const hint = this.add.text(c.width / 2, c.height / 2 + 80,
-      `${this.levels.coinsPerLevel} more coins for level ${level + 1}`,
+      (this.difficulty.timeBonusSeconds ? `+${this.difficulty.timeBonusSeconds}s  \u00b7  ` : '')
+        + `${this.levels.coinsPerLevel} more coins for level ${level + 1}`,
       { font: '20px monospace', color: '#ffffff', stroke: '#0a1120', strokeThickness: 6 }
     ).setOrigin(0.5).setAlpha(0).setDepth(10);
     this.tweens.add({ targets: label, scale: 1, alpha: 1, duration: 380, ease: 'Back.Out' });

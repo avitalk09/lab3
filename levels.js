@@ -25,6 +25,7 @@
 
   const DEFAULTS = {
     coinsPerLevel: 10,          // coins collected (not score) needed to advance
+    timeBonusSeconds: 5,        // seconds added to the round timer on each level up
     maxLevel: 0,                // 0 = unlimited
     droneSpeedGrowth: 0.12,     // +12% enemy speed per level (compounding)
     maxDroneSpeedMultiplier: 3, // cap so the game stays playable
@@ -81,6 +82,7 @@
     }
     return {
       level: n,
+      timeBonusSeconds: n > 1 ? s.timeBonusSeconds : 0,
       droneSpeedMultiplier: Number(speedMultiplier.toFixed(4)),
       extraDrones,            // enemies to add on top of the base count (before maxDrones cap)
       maxDrones: s.maxDrones,

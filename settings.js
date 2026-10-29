@@ -9,6 +9,7 @@ window.COIN_DASH = {
   // Level progression (see levels.js for every option and its default).
   levels: {
     coinsPerLevel: 10,          // coins collected (not score) per level
+    timeBonusSeconds: 5,        // extra seconds on the round timer at each level up
     droneSpeedGrowth: 0.12,     // +12% enemy speed per level
     dronesAddedEveryLevels: 1,  // one extra enemy every N levels
     maxDrones: 8,

@@ -98,6 +98,9 @@ test('difficulty curve: speed grows and is capped, enemies added, coin timer kic
   assert.equal(d1.droneSpeedMultiplier, 1);
   assert.equal(d1.extraDrones, 0);
   assert.equal(d1.coinLifetimeMs, 0);
+  assert.equal(d1.timeBonusSeconds, 0, 'no bonus at level 1');
+  assert.equal(d2.timeBonusSeconds, Levels.DEFAULTS.timeBonusSeconds);
+  assert.equal(difficultyFor(3, { timeBonusSeconds: 0 }).timeBonusSeconds, 0);
   assert.ok(d2.droneSpeedMultiplier > d1.droneSpeedMultiplier);
   assert.ok(d5.droneSpeedMultiplier > d2.droneSpeedMultiplier);
   assert.equal(d99.droneSpeedMultiplier, Levels.DEFAULTS.maxDroneSpeedMultiplier);
