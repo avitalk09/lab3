@@ -1,0 +1,76 @@
+<!doctype html><html><head><meta charset="utf-8"><title>Coin Dash levels smoke test</title></head><body>
+<!-- Headless smoke test of the real game. Open in a browser (file:// is fine) or run:
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --allow-file-access-from-files --virtual-time-budget=10000 --dump-dom tests/smoke.html
+  The <pre> shows levels reached, drone counts/speeds, events and restart state. -->
+<div id="game"></div><pre id="out">PENDING</pre>
+<script>
+window.__errors = [];
+window.addEventListener('error', e => __errors.push(String(e.message)));
+</script>
+<script src="../vendor/phaser-3.90.0.min.js"></script>
+<script src="../settings.js"></script>
+<script src="../levels.js"></script>
+<script src="../difficulty.js"></script>
+<script src="../screens.js"></script>
+<script src="../difficulty-select.js"></script>
+<script src="../pause.js"></script>
+<script src="../effects.js"></script>
+<script src="../sound.js"></script>
+<script src="../combo.js"></script>
+<script src="../enemies.js"></script>
+<script src="../levels.js"></script>
+<script src="../game.js"></script>
+<script>
+const out = (o) => document.getElementById('out').textContent = JSON.stringify(o);
+const log = {};
+let t = 1000;
+function frames(n) { for (let i = 0; i < n; i++) { t += 16; coinDashGame.loop.step(t); } }
+function scene() { return window.coinDashGame && coinDashGame.scene.getScene('CoinDash'); }
+function speeds(s) { return s.drones.getChildren().map(d => Math.round(d.body.velocity.length())); }
+function hasLevelUpText(s) { return s.children.list.some(ch => ch.type === 'Text' && /LEVEL UP/.test(ch.text)); }
+// Park drones away from the coin before teleporting the player onto it (the catch logic itself is untouched).
+function parkDrones(s, nearX = s.coin.x) { s.drones.getChildren().forEach((d, i) => {
+  const x = nearX < 400 ? 700 : 100, y = 80 + (i % 8) * 50, vx = d.body.velocity.x, vy = d.body.velocity.y;
+  d.setPosition(x, y); d.body.reset(x, y); d.body.setVelocity(vx, vy); }); }
+function types(s) { const t = {}; s.drones.getChildren().forEach(d => { const k = d.enemyState ? d.enemyState.type : '?'; t[k] = (t[k] || 0) + 1; }); return t; }
+function grab(s) { parkDrones(s); s.player.setPosition(s.coin.x, s.coin.y); s.player.body.reset(s.coin.x, s.coin.y); }
+let sceneLevelEvents = [], globalEvents = [], levelUpSeen = [];
+CoinDashLevels.onLevelChange(e => globalEvents.push(e.level));
+function run() {
+  const mgr = coinDashGame.scene;
+  if (mgr.isActive('Menu')) { mgr.stop('Menu'); mgr.start('CoinDash'); }
+  let s = scene();
+  if (!s || !s.levels || !s.drones) { frames(1); return setTimeout(run, 20); }
+  try {
+    s.events.on('levelchange', e => sceneLevelEvents.push(e.level));
+    log.start = { level: s.levels.level, drones: s.drones.getLength(), speeds: speeds(s), hud: s.levelText.text, time: Math.ceil((s.deadline - s.time.now)/1000) };
+    for (let n = 1; n <= 25; n++) {
+      grab(s); frames(3);
+      if (n % 10 === 0) levelUpSeen.push(hasLevelUpText(s));
+    }
+    log.after25 = { score: s.score, sceneCoins: s.coins, coins: s.levels.coins, level: s.levels.level, drones: s.drones.getLength(),
+      speeds: speeds(s), types: types(s), enemySpeedMod: s.enemies.getModifiers().speed, hud: s.levelText.text, bar: Math.round(s.levelBar.width), levelUpSeen, sceneLevelEvents, globalEvents, coinLifetime: s.levelDifficulty.coinLifetimeMs,
+      timerSecondsLeft: Math.ceil((s.deadline - s.time.now) / 1000), finished: s.finished };
+    // Coin timer at level 4: collect 10 more coins then wait with the coin uncollected.
+    for (let n = 0; n < 10; n++) { grab(s); frames(3); }
+    parkDrones(s, 40); s.player.setPosition(40, 80); s.player.body.reset(40, 80);
+    const coinBefore = [s.coin.x, s.coin.y]; frames(5);
+    const coinAfter5 = [s.coin.x, s.coin.y];
+    for (let k = 0; k < 10; k++) { parkDrones(s, 40); frames(30); }  // ~4.8 s, chasers kept away
+    log.level4 = { level: s.levels.level, coinLifetime: s.levelDifficulty.coinLifetimeMs, drones: s.drones.getLength(), speeds: speeds(s), types: types(s), enemySpeedMod: s.enemies.getModifiers().speed, finished: s.finished,
+      coinStayedFor5Frames: coinBefore.join() === coinAfter5.join(), coinMovedAfterTimeout: coinBefore.join() !== [s.coin.x, s.coin.y].join(),
+      hud: s.levelText.text, timerSecondsLeft: Math.ceil((s.deadline - s.time.now) / 1000) };
+    const scoreBeforeRestart = s.score;
+    s.scene.restart(); frames(5);
+    const s2 = scene();
+    log.afterRestart = { level: s2.levels.level, coins: s2.levels.coins, score: s2.score, drones: s2.drones.getLength(),
+      speeds: speeds(s2), hud: s2.levelText.text, currentIsNew: CoinDashLevels.current === s2.levels, scoreBeforeRestart,
+      timerSecondsLeft: Math.ceil((s2.deadline - s2.time.now) / 1000) };
+    grab(s2); frames(3);
+    log.afterRestartCoin = { score: s2.score, coins: s2.levels.coins, level: s2.levels.level };
+  } catch (e) { log.exception = String(e && e.stack || e); }
+  log.errors = __errors;
+  out(log);
+}
+setTimeout(run, 100);
+</script></body></html>
