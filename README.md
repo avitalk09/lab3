@@ -37,6 +37,8 @@ laptops' JSON files together and save the combined HTML. Use the same time windo
 - `index.html`: page and script loading.
 - `style.css`: page appearance.
 - `settings.js`: round duration, speeds, colours and dimensions.
+- `difficulty.js`: EASY / NORMAL / HARD modes, enemy-speed scaling helpers and localStorage persistence.
+- `difficulty-select.js`: the difficulty picker (standalone `DifficultySelect` scene, or `attachDifficultyPicker()` to embed in any menu).
 - `game.js`: scene, input, collisions, score and end-of-round behaviour.
 - `levels.js`: level manager (every 10 coins = next level), difficulty curve and the
   `levelchange` event other modules can subscribe to.

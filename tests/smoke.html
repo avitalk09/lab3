@@ -10,7 +10,13 @@ window.addEventListener('error', e => __errors.push(String(e.message)));
 <script src="../vendor/phaser-3.90.0.min.js"></script>
 <script src="../settings.js"></script>
 <script src="../levels.js"></script>
+<script src="../difficulty.js"></script>
 <script src="../screens.js"></script>
+<script src="../difficulty-select.js"></script>
+<script src="../pause.js"></script>
+<script src="../effects.js"></script>
+<script src="../sound.js"></script>
+<script src="../combo.js"></script>
 <script src="../game.js"></script>
 <script>
 const out = (o) => document.getElementById('out').textContent = JSON.stringify(o);
@@ -22,7 +28,8 @@ function speeds(s) { return s.drones.getChildren().map(d => Math.round(d.body.ve
 function hasLevelUpText(s) { return s.children.list.some(ch => ch.type === 'Text' && /LEVEL UP/.test(ch.text)); }
 // Park drones away from the coin before teleporting the player onto it (the catch logic itself is untouched).
 function parkDrones(s) { s.drones.getChildren().forEach((d, i) => {
-  const x = s.coin.x < 400 ? 700 : 100, y = 80 + i * 50; d.setPosition(x, y); d.body.reset(x, y); }); }
+  const x = s.coin.x < 400 ? 700 : 100, y = 80 + i * 50, vx = d.body.velocity.x, vy = d.body.velocity.y;
+  d.setPosition(x, y); d.body.reset(x, y); d.body.setVelocity(vx, vy); }); }
 function grab(s) { parkDrones(s); s.player.setPosition(s.coin.x, s.coin.y); s.player.body.reset(s.coin.x, s.coin.y); }
 let sceneLevelEvents = [], globalEvents = [], levelUpSeen = [];
 CoinDashLevels.onLevelChange(e => globalEvents.push(e.level));
@@ -38,7 +45,7 @@ function run() {
       grab(s); frames(3);
       if (n % 10 === 0) levelUpSeen.push(hasLevelUpText(s));
     }
-    log.after25 = { score: s.score, coins: s.levels.coins, level: s.levels.level, drones: s.drones.getLength(),
+    log.after25 = { score: s.score, sceneCoins: s.coins, coins: s.levels.coins, level: s.levels.level, drones: s.drones.getLength(),
       speeds: speeds(s), hud: s.levelText.text, bar: Math.round(s.levelBar.width), levelUpSeen, sceneLevelEvents, globalEvents, coinLifetime: s.difficulty.coinLifetimeMs,
       timerSecondsLeft: Math.ceil((s.deadline - s.time.now) / 1000), finished: s.finished };
     // Coin timer at level 4: collect 10 more coins then wait with the coin uncollected.

@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH */
+/* global Phaser, COIN_DASH, COIN_DASH_DIFFICULTY */
 // Start menu and game-over screens. Kept separate from game.js so gameplay stays untouched.
 const NEON = {
   cyan: '#71e8ce', yellow: '#ffd166', pink: '#ff657a', violet: '#b388ff', white: '#f4f8ff',
@@ -69,9 +69,10 @@ function neonButton(scene, x, y, label, color, onClick, w = 240, h = 64) {
   return button;
 }
 
-function startRound(scene) {
+// `target` defaults to the game; the menu passes 'DifficultySelect' so players pick a mode first.
+function startRound(scene, target = 'CoinDash') {
   scene.cameras.main.fadeOut(220, 10, 17, 32);
-  scene.cameras.main.once('camerafadeoutcomplete', () => scene.scene.start('CoinDash'));
+  scene.cameras.main.once('camerafadeoutcomplete', () => scene.scene.start(target, { next: 'CoinDash' }));
 }
 
 class MenuScene extends Phaser.Scene {
@@ -115,7 +116,7 @@ class MenuScene extends Phaser.Scene {
     this.tweens.add({ targets: drone, angle: 360, duration: 3000, repeat: -1 });
     this.tweens.add({ targets: drone, y: 205, duration: 800, yoyo: true, repeat: -1, ease: 'Sine.easeInOut' });
 
-    neonButton(this, cx, 215, '▶ PLAY', NEON.yellow, () => startRound(this), 260, 70);
+    neonButton(this, cx, 215, '▶ PLAY', NEON.yellow, () => startRound(this, 'DifficultySelect'), 260, 70);
 
     this.drawHowToPlay(cx, 380);
   }
@@ -162,6 +163,8 @@ class GameOverScene extends Phaser.Scene {
   init(data) {
     this.finalScore = data.score || 0;
     this.reason = data.reason || '';
+    this.difficulty = data.difficulty || COIN_DASH_DIFFICULTY.getCurrentKey();
+    this.level = data.level || 0; // level reached (levels.js), if the game scene passed it
     this.previousBest = readBest();
     this.isBest = this.finalScore > this.previousBest;
     if (this.isBest) writeBest(this.finalScore);
@@ -185,6 +188,9 @@ class GameOverScene extends Phaser.Scene {
     } });
 
     neonText(this, cx, 152, this.reason.toUpperCase(), 18, NEON.white).setAlpha(0.8);
+    const mode = COIN_DASH_DIFFICULTY.get(this.difficulty);
+    const levelTag = this.level ? ` \u00b7 LEVEL ${this.level}` : '';
+    neonText(this, cx, 176, `DIFFICULTY: ${mode.label.toUpperCase()}${levelTag}`, 14, mode.colorCss).setAlpha(0.9);
     neonText(this, cx, 200, 'FINAL SCORE', 18, NEON.cyan);
 
     // Count the score up for a bit of arcade drama.
