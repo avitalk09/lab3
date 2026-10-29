@@ -142,7 +142,8 @@
       const s = this.scene, cfg = this.cfg;
       if (typeof cfg.getLevel === 'function') return Number(cfg.getLevel(s)) || 0;
       if (typeof s.level === 'number') return s.level;
-      return Math.floor((s.score || 0) / cfg.coinsPerLevel) + 1;
+      const coins = typeof s.coins === 'number' ? s.coins : (s.score || 0); // coins, not combo points
+      return Math.floor(coins / cfg.coinsPerLevel) + 1;
     }
 
     difficultyMultiplier() {
@@ -150,13 +151,19 @@
       let dynamic = 1;
       if (typeof cfg.getDifficulty === 'function') dynamic = Number(cfg.getDifficulty(s)) || 1;
       else if (typeof s.difficulty === 'number') dynamic = s.difficulty;
+      else if (window.COIN_DASH_DIFFICULTY && typeof window.COIN_DASH_DIFFICULTY.multiplier === 'function') {
+        dynamic = Number(window.COIN_DASH_DIFFICULTY.multiplier()) || 1; // EASY / NORMAL / HARD modes
+      }
       return Math.max(0.1, cfg.difficulty * dynamic);
     }
 
     enraged() { return this.health <= this.cfg.enrageAt; }
     chaseSpeed() { return this.cfg.speed * this.difficultyMultiplier() * (this.enraged() ? 1.3 : 1); }
     fireDelay() { return this.cfg.fireIntervalMs / this.difficultyMultiplier() * (this.enraged() ? 0.8 : 1); }
-    frozen() { return this.paused || this.scene.finished || this.scene.physics.world.isPaused; }
+    frozen() {
+      const s = this.scene;
+      return this.paused || s.finished || s.physics.world.isPaused || !!(s.pauser && s.pauser.paused);
+    }
 
     delayed(ms, fn) {
       const t = this.scene.time.delayedCall(ms, () => {
@@ -280,8 +287,12 @@
       if (this.state !== 'active' || s.finished) return;
       if (s.time.now - this.lastHitAt < this.cfg.hitCooldownMs) return;
       this.lastHitAt = s.time.now;
-      if (typeof this.cfg.onPlayerHit === 'function') this.cfg.onPlayerHit(s, reason);
-      else if (typeof s.finish === 'function') s.finish(reason);
+      if (typeof this.cfg.onPlayerHit === 'function') { this.cfg.onPlayerHit(s, reason); return; }
+      // Existing damage behaviour: effects + sound when those modules are loaded, then the round ends.
+      if (s.effects && typeof s.effects.playerHit === 'function') s.effects.playerHit(this.player.x, this.player.y);
+      const sound = window.CoinDashSound;
+      if (sound && typeof sound.hit === 'function') sound.hit();
+      if (typeof s.finish === 'function') s.finish(reason);
     }
 
     // ---------- attack coins ----------
@@ -355,8 +366,9 @@
     // ---------- health bar ----------
     buildHealthBar() {
       const s = this.scene, c = window.COIN_DASH;
+      // Centred just under the HUD strip: the top-right corner holds the difficulty badge and pause button.
       const w = 260, h = 14;
-      this.bar = { x: c.width - 16 - w, y: 22, w, h };
+      this.bar = { x: (c.width - w) / 2, y: HUD_HEIGHT + 14, w, h };
       const label = s.add.text(this.bar.x - 8, this.bar.y, 'BOSS', {
         font: 'bold 13px monospace', color: '#ff3b3b'
       }).setOrigin(1, 0.5);
