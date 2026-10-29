@@ -34,5 +34,6 @@ window.COIN_DASH = {
       { at: 32, type: 'speed',  count: 1 },
       { at: 38, type: 'chaser', count: 1 }
     ]
-  }
+  },
+  boss: { triggerLevel: 5, coinsPerLevel: 3, hitsToDefeat: 5, bonusPoints: 100, afterDefeat: 'continue' }
 };

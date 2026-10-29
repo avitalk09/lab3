@@ -38,6 +38,7 @@ laptops' JSON files together and save the combined HTML. Use the same time windo
 - `style.css`: page appearance.
 - `settings.js`: round duration, speeds, colours and dimensions.
 - `enemies.js`: enemy behaviours (drone, chaser, speeder, patrol), spawning, introduction schedule and difficulty hooks.
+- `boss.js`: final boss encounter (level 5 trigger, chase, projectiles, attack coins, health bar); press B to summon it for testing.
 - `difficulty.js`: EASY / NORMAL / HARD modes, enemy-speed scaling helpers and localStorage persistence.
 - `difficulty-select.js`: the difficulty picker (standalone `DifficultySelect` scene, or `attachDifficultyPicker()` to embed in any menu).
 - `game.js`: scene, input, collisions, score and end-of-round behaviour.

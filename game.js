@@ -60,6 +60,7 @@ class CoinDash extends Phaser.Scene {
       }
       this.finish(`${this.enemies.describe(enemy)} caught you!`);
     }, (player, enemy) => this.enemies.isArmed(enemy));
+    if (window.CoinDashBoss) CoinDashBoss.attach(this); // final boss (boss.js), triggered by level
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
