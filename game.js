@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH */
+/* global Phaser, COIN_DASH, ArenaManager */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -8,8 +8,8 @@ class CoinDash extends Phaser.Scene {
     this.finished = false;
     this.deadline = this.time.now + c.roundSeconds * 1000;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
-    this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
-      c.colors.background, 1, 0x24334b, 0.45);
+    // Arena visuals (background, borders, effects) live in arenas.js; see ArenaManager.
+    this.arena = new ArenaManager(this);
     this.hud = this.add.text(18, 12, '', { font: '18px monospace', color: '#ffffff' });
     this.player = this.add.rectangle(c.width / 2, c.height / 2, 24, 24, c.colors.player);
     this.physics.add.existing(this.player);
