@@ -1,8 +1,8 @@
 // Coin Dash sound effects and music, synthesised with the Web Audio API (no audio files).
 // Other code triggers sounds through window.CoinDashSound:
 //   coin(), hit(), milestone(), start(), gameOver()            play an effect
-//   toggleMute(), setMuted(bool), isMuted()                      master mute (key M)
-//   toggleMusic(), setMusic(bool), isMusicOn()                   background music (key B)
+//   toggleMute(), setMuted(bool), isMuted()                      master mute
+//   toggleMusic(), setMusic(bool), isMusicOn()                   background music
 //   onChange(fn)                                                 fn({ muted, music }) on any change
 // From game code prefer `window.CoinDashSound?.coin()` so the game still runs without this file.
 // Every call is safe before the first user gesture: the browser keeps audio locked until then,
@@ -201,9 +201,9 @@
     const muteBtn = button(() => setMuted(!prefs.muted));
     const musicBtn = button(() => setMusic(!prefs.music));
     const render = p => {
-      muteBtn.textContent = p.muted ? '\u{1F507} Unmute (M)' : '\u{1F50A} Mute (M)';
+      muteBtn.textContent = p.muted ? '\u{1F507} Unmute' : '\u{1F50A} Mute';
       muteBtn.setAttribute('aria-pressed', String(p.muted));
-      musicBtn.textContent = p.music ? '\u266A Music: on (B)' : '\u266A Music: off (B)';
+      musicBtn.textContent = p.music ? '\u266A Music: on' : '\u266A Music: off';
       musicBtn.setAttribute('aria-pressed', String(p.music));
       musicBtn.style.opacity = p.muted ? '0.5' : '1';
     };
@@ -211,13 +211,6 @@
     render(prefs);
     game.insertAdjacentElement('afterend', bar);
   }
-
-  window.addEventListener('keydown', e => {
-    if (e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) return;
-    if (e.code === 'KeyM') setMuted(!prefs.muted);
-    else if (e.code === 'KeyB') setMusic(!prefs.music);
-  });
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', buildControls);
   else buildControls();
