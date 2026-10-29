@@ -6,7 +6,8 @@ class CoinDash extends Phaser.Scene {
     const c = COIN_DASH;
     this.score = 0;
     this.finished = false;
-    this.deadline = this.time.now + c.roundSeconds * 1000;
+    // The scene clock is stale until its first update, so read the live game loop time.
+    this.deadline = this.game.loop.time + c.roundSeconds * 1000;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     // Arena visuals (background, borders, effects) live in arenas.js; see ArenaManager.
     this.arena = new ArenaManager(this);
@@ -66,12 +67,8 @@ class CoinDash extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     this.physics.pause();
-    const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
-    this.add.text(c.width / 2, c.height / 2,
-      `${reason}\n${this.score} coins collected\nPress R to try again`,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
-    ).setOrigin(0.5);
+    // Brief pause so the player sees what happened, then hand off to the Game Over screen.
+    this.time.delayedCall(700, () => this.scene.start('GameOver', { score: this.score, reason }));
   }
 }
 window.coinDashGame = new Phaser.Game({
@@ -82,5 +79,5 @@ window.coinDashGame = new Phaser.Game({
   backgroundColor: COIN_DASH.colors.background,
   physics: { default: 'arcade', arcade: { debug: false } },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
-  scene: CoinDash
+  scene: [COIN_DASH_SCREENS.MenuScene, CoinDash, COIN_DASH_SCREENS.GameOverScene]
 });
