@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Lab 3 — Session report</title>
+<style>
+:root{font-family:system-ui,sans-serif;color:#192c42;background:#f3f6f9;line-height:1.5}*{box-sizing:border-box}
+body{margin:0}main{max-width:1100px;margin:auto;padding:32px 24px}h1{font-size:34px;margin:4px 0}h2{margin:0 0 14px;font-size:22px}h3{margin:18px 0 6px;font-size:17px}p{margin:8px 0}
+.eyebrow{letter-spacing:.12em;font-size:12px;font-weight:700;color:#44617e}.muted{color:#53667a;font-size:14px}
+section{background:white;border:1px solid #d9e1e9;border-radius:12px;padding:22px;margin:20px 0}
+.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0}button,.file-label{font:inherit;font-weight:600;padding:9px 14px;border:1px solid #8fa3b8;background:white;border-radius:6px;color:#192c42;cursor:pointer}.file-label input{display:block;font-size:12px;max-width:270px;margin-top:5px}
+.banner{background:#fff1c2;border-left:5px solid #b57900;padding:12px 16px}.error{color:#a2202c;font-weight:600}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:8px 0 4px}.stat{padding:14px;background:#eef4fa;border-radius:8px}.stat b{display:block;font-size:26px}
+.legend{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin:12px 0}.key{display:inline-block;width:15px;height:12px;margin-right:5px;vertical-align:middle;border-radius:2px}.working{background:#2874bd}.waiting{background:#e2a12f}.idle{background:#a78bd6}
+.scroll{overflow-x:auto}.timeline{min-width:700px}.axis,.row{display:grid;grid-template-columns:200px 1fr;gap:12px}.axis{font-size:12px;margin-bottom:8px}.ticks{display:flex;justify-content:space-between}.row{align-items:center;margin:10px 0}
+.label{font-size:14px;overflow-wrap:anywhere}.label small{display:block;color:#53667a}.track{position:relative;height:30px;border:1px solid #d4dde7;background:repeating-linear-gradient(to right,#fafbfd 0%,#fafbfd calc(16.6667% - 1px),#dfe6ed calc(16.6667% - 1px),#dfe6ed 16.6667%)}.interval{position:absolute;top:5px;height:18px;min-width:1px;border-radius:3px}
+.span{position:absolute;top:13px;height:3px;background:#b8c4d1;z-index:0}.mark{position:absolute;top:1px;bottom:1px;width:3px;background:#263648;z-index:2;border-radius:1px}.interval{z-index:1}
+pre{background:#0f1a2b;color:#e8eef5;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px;line-height:1.4}ul{padding-left:22px}.student{border-top:1px solid #dfe6ed;padding:8px 0}
+.c30{color:#8b98a8}.c31{color:#ff7b72}.c32{color:#7ee787}.c33{color:#e3b341}.c34{color:#79c0ff}.c35{color:#d2a8ff}.c36{color:#56d4dd}.c37{color:#e8eef5}.bold{font-weight:700}
+@media print{.controls,#error{display:none}body{background:white}main{padding:0;max-width:none}section{break-inside:avoid;padding:12px;margin:12px 0}.scroll{overflow:visible}.timeline{min-width:0}h1{font-size:26px}pre{color:#192c42;background:#f3f6f9}}
+</style>
+</head>
+<body><main>
+<header><p class="eyebrow">LAB 3 · BUILD WITH SEVERAL AGENTS</p><h1>Session report</h1><p id="window" class="muted"></p></header>
+<div class="controls"><label class="file-label">Load laptop JSON files<input id="files" type="file" accept=".json,application/json" multiple></label><button id="save-html">Save HTML report</button></div>
+<p class="muted">Select both partners’ JSON files together. Loading replaces what is shown. Save HTML to keep a standalone copy with your data.</p>
+<p id="error" class="error" role="alert"></p><div id="report"></div>
+</main>
+<script id="report-data" type="application/json">{
+  "version": 2,
+  "example": true,
+  "lab": {
+    "start": "2026-10-20T07:00:00Z",
+    "end": "2026-10-20T08:30:00Z"
+  },
+  "laptops": [
+    {
+      "id": "dana-laptop",
+      "student": "Dana (example)",
+      "summary": "Added a pause key and a colour theme. Started touch controls but did not finish them.",
+      "observations": [
+        "I lost track of the touch-controls session while helping my partner resolve a conflict."
+      ],
+      "notes": "",
+      "history": "* c7d8e9f (HEAD -> main, origin/main, feature/highscore) Add a high score that survives a reload\n*   a1f2c3d Merge branch 'feature/pause'\n|\\  \n| * 9b8e7d6 (origin/feature/pause) Add pause key\n* | 4c5d6e7 Add teal theme\n|/  \n* 0f1e2d3 Starting checkpoint\n* 7e6d5c4 Coin Dash starter",
+      "sessions": [
+        {
+          "id": "dana-main",
+          "label": "Delegate two colour themes",
+          "tool": "Codex",
+          "parent": null,
+          "intervals": [
+            {
+              "start": "2026-10-20T07:15:00Z",
+              "end": "2026-10-20T07:27:00Z",
+              "state": "working"
+            }
+          ],
+          "start": "2026-10-20T07:15:00Z",
+          "end": "2026-10-20T07:27:00Z"
+        },
+        {
+          "id": "dana-teal",
+          "label": "Teal theme",
+          "tool": "Codex",
+          "parent": "dana-main",
+          "intervals": [
+            {
+              "start": "2026-10-20T07:17:00Z",
+              "end": "2026-10-20T07:24:00Z",
+              "state": "working"
+            }
+          ],
+          "start": "2026-10-20T07:17:00Z",
+          "end": "2026-10-20T07:24:00Z"
+        },
+        {
+          "id": "dana-pause",
+          "label": "Pause key",
+          "tool": "Codex",
+          "parent": null,
+          "intervals": [
+            {
+              "start": "2026-10-20T07:16:00Z",
+              "end": "2026-10-20T07:23:00Z",
+              "state": "working"
+            },
+            {
+              "start": "2026-10-20T07:23:00Z",
+              "end": "2026-10-20T07:28:00Z",
+              "state": "waiting"
+            },
+            {
+              "start": "2026-10-20T07:28:00Z",
+              "end": "2026-10-20T07:34:00Z",
+              "state": "working"
+            }
+          ],
+          "start": "2026-10-20T07:16:00Z",
+          "end": "2026-10-20T07:34:00Z"
+        },
+        {
+          "id": "dana-touch",
+          "label": "Touch controls",
+          "tool": "Codex",
+          "parent": null,
+          "intervals": [
+            {
+              "start": "2026-10-20T07:32:00Z",
+              "end": "2026-10-20T07:38:00Z",
+              "state": "working"
+            },
+            {
+              "start": "2026-10-20T07:38:00Z",
+              "end": "2026-10-20T07:55:00Z",
+              "state": "waiting"
+            }
+          ],
+          "start": "2026-10-20T07:32:00Z",
+          "end": "2026-10-20T07:57:00Z"
+        }
+      ]
+    },
+    {
+      "id": "omer-laptop",
+      "student": "Omer (example)",
+      "summary": "Added a high score that survives a reload, then rebased it onto main and merged it.",
+      "observations": [
+        "The rebase went through without a conflict, and the history stayed a straight line."
+      ],
+      "notes": "",
+      "history": "* c7d8e9f (HEAD -> main, origin/main, feature/highscore) Add a high score that survives a reload\n*   a1f2c3d Merge branch 'feature/pause'\n|\\  \n| * 9b8e7d6 (origin/feature/pause) Add pause key\n* | 4c5d6e7 Add teal theme\n|/  \n* 0f1e2d3 Starting checkpoint\n* 7e6d5c4 Coin Dash starter",
+      "sessions": [
+        {
+          "id": "omer-highscore",
+          "label": "High score",
+          "tool": "Claude",
+          "parent": null,
+          "intervals": [
+            {
+              "start": "2026-10-20T07:14:00Z",
+              "end": "2026-10-20T07:22:00Z",
+              "state": "working"
+            },
+            {
+              "start": "2026-10-20T07:22:00Z",
+              "end": "2026-10-20T07:25:00Z",
+              "state": "waiting"
+            },
+            {
+              "start": "2026-10-20T07:25:00Z",
+              "end": "2026-10-20T07:31:00Z",
+              "state": "working"
+            }
+          ],
+          "start": "2026-10-20T07:13:00Z",
+          "end": "2026-10-20T07:31:00Z"
+        },
+        {
+          "id": "omer-rebase",
+          "label": "Rebase and merge",
+          "tool": "Claude",
+          "parent": null,
+          "intervals": [
+            {
+              "start": "2026-10-20T07:40:00Z",
+              "end": "2026-10-20T07:44:00Z",
+              "state": "working"
+            },
+            {
+              "start": "2026-10-20T07:44:00Z",
+              "end": "2026-10-20T07:46:00Z",
+              "state": "waiting"
+            },
+            {
+              "start": "2026-10-20T07:46:00Z",
+              "end": "2026-10-20T07:49:00Z",
+              "state": "working"
+            }
+          ],
+          "start": "2026-10-20T07:40:00Z",
+          "end": "2026-10-20T07:49:00Z"
+        }
+      ]
+    }
+  ]
+}</script>
+<script>
+'use strict';
+const STATES = ['working', 'waiting'];
+const requireValue = (ok, message) => { if (!ok) throw new Error(message); };
+const stamp = value => {
+  requireValue(typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T.*(?:Z|[+-]\d{2}:\d{2})$/.test(value) && Number.isFinite(Date.parse(value)), 'Every timestamp must be ISO 8601 with a timezone.');
+  return Date.parse(value);
+};
+const text = (value, label) => requireValue(typeof value === 'string' && value.trim(), `${label} is required.`);
+const optionalText = (value, label) => requireValue(value === undefined || value === null || typeof value === 'string', `${label} must be text.`);
+function validate(data) {
+  requireValue(data && data.version === 2 && typeof data.example === 'boolean', 'Expected version:2 and example:true/false.');
+  const start = stamp(data.lab?.start), end = stamp(data.lab?.end);
+  requireValue(end > start, 'Lab end must be after lab start.');
+  requireValue(Array.isArray(data.laptops) && data.laptops.length > 0, 'Include at least one laptop.');
+  const laptopIds = new Set(), sessionIds = new Set();
+  for (const laptop of data.laptops) {
+    for (const key of ['id', 'student', 'summary']) text(laptop[key], `Laptop ${key}`);
+    requireValue(!laptopIds.has(laptop.id), `Duplicate laptop: ${laptop.id}`); laptopIds.add(laptop.id);
+    requireValue(Array.isArray(laptop.observations) && laptop.observations.every(v => typeof v === 'string'), 'Observations must be a list of strings.');
+    optionalText(laptop.notes, 'Notes'); optionalText(laptop.history, 'History');
+    requireValue(Array.isArray(laptop.sessions), 'Sessions must be a list.');
+    requireValue(laptop.sessions.length > 0 || (laptop.notes && laptop.notes.trim()), 'A laptop with no sessions must say why in notes.');
+    for (const session of laptop.sessions) {
+      for (const key of ['id', 'label', 'tool']) text(session[key], `Session ${key}`);
+      requireValue(!sessionIds.has(session.id), `Duplicate session: ${session.id}`); sessionIds.add(session.id);
+      optionalText(session.parent, 'Parent');
+      requireValue(Array.isArray(session.intervals), 'Intervals must be a list.');
+      const intervals = session.intervals.map(i => {
+        const a = stamp(i.start), b = stamp(i.end);
+        requireValue(STATES.includes(i.state), `Interval state in ${session.label} must be working or waiting.`);
+        requireValue(a >= start && b <= end && b > a, `Interval in ${session.label} is outside the lab window or ends before it starts.`);
+        return [a, b];
+      }).sort((a, b) => a[0] - b[0]);
+      for (let n = 1; n < intervals.length; n++) requireValue(intervals[n][0] >= intervals[n - 1][1], `Overlapping intervals in ${session.label}.`);
+      const [first, last] = span(session);
+      requireValue(first !== null && last !== null, `Session ${session.label} needs start and end, or at least one interval.`);
+      // An interrupted session may contain only its first message, with no measured time.
+      requireValue(first >= start && last <= end && (last > first || (last === first && intervals.length === 0)), `Start and end of ${session.label} must lie inside the lab window, in order.`);
+      requireValue(intervals.every(([a, b]) => a >= first && b <= last), `Intervals of ${session.label} fall outside its start and end.`);
+    }
+  }
+  return data;
+}
+// A session's first message and last reply: the declared start/end, else the edge of its intervals.
+function span(session) {
+  const starts = session.intervals.map(i => stamp(i.start)), ends = session.intervals.map(i => stamp(i.end));
+  const first = session.start ? stamp(session.start) : (starts.length ? Math.min(...starts) : null);
+  const last = session.end ? stamp(session.end) : (ends.length ? Math.max(...ends) : null);
+  return [first, last];
+}
+function combine(reports) {
+  reports.forEach(validate);
+  const first = reports[0];
+  for (const r of reports) requireValue(stamp(r.lab.start) === stamp(first.lab.start) && stamp(r.lab.end) === stamp(first.lab.end), 'Both laptops must use the same lab start and end.');
+  requireValue(reports.every(r => r.example === first.example), 'Do not combine the fictional example with collected data.');
+  return validate({ version: 2, example: first.example, lab: first.lab, laptops: reports.flatMap(r => r.laptops) });
+}
+// Idle: the agent had replied and no new task had come yet, i.e. the gaps between a session's intervals.
+function idleGaps(session) {
+  const sorted = session.intervals.map(i => [stamp(i.start), stamp(i.end)]).sort((a, b) => a[0] - b[0]);
+  return sorted.slice(1).map((cur, n) => [sorted[n][1], cur[0]]).filter(([a, b]) => b > a);
+}
+function totals(sessions) {
+  const out = { working: 0, waiting: 0, idle: 0 };
+  sessions.forEach(s => s.intervals.forEach(i => out[i.state] += (stamp(i.end) - stamp(i.start)) / 60000));
+  sessions.forEach(s => idleGaps(s).forEach(([a, b]) => out.idle += (b - a) / 60000));
+  return out;
+}
+// Average number of agents working at any moment: working minutes over the lab window.
+function utilization(sessions, duration) { return (totals(sessions).working / (duration / 60000)).toFixed(1); }
+function el(tag, content, className) { const node = document.createElement(tag); if (content !== undefined) node.textContent = content; if (className) node.className = className; return node; }
+function section(root, title) { const s = el('section'); s.append(el('h2', title)); root.append(s); return s; }
+function stat(parent, value, label) { const s = el('div', undefined, 'stat'); s.append(el('b', value), el('span', label)); parent.append(s); }
+function render(data) {
+  const root = document.getElementById('report'); root.replaceChildren();
+  const start = stamp(data.lab.start), duration = stamp(data.lab.end) - start;
+  const minute = t => ((stamp(t) - start) / 60000).toFixed(1);
+  document.getElementById('window').textContent = `${data.laptops.map(l => l.student).join(' + ')} · ${new Date(start).toISOString()} · ${Math.round(duration / 60000)} minutes`;
+  if (data.example) root.append(el('p', 'FICTIONAL EXAMPLE — these sessions and timings only show the format. Load your own exports to replace them.', 'banner'));
+
+  const glance = section(root, 'Agent time');
+  for (const laptop of data.laptops) {
+    const sum = totals(laptop.sessions);
+    glance.append(el('h3', laptop.student));
+    const stats = el('div', undefined, 'stats'); glance.append(stats);
+    stat(stats, `${sum.working.toFixed(0)} min`, 'agent working');
+    stat(stats, `${sum.waiting.toFixed(0)} min`, 'agent waiting for an answer');
+    stat(stats, `${sum.idle.toFixed(0)} min`, 'agent idle, waiting for the next task');
+    stat(stats, utilization(laptop.sessions, duration), 'agents working at once, on average');
+    stat(stats, String(laptop.sessions.length), 'sessions');
+  }
+  const pair = utilization(data.laptops.flatMap(l => l.sessions), duration);
+  glance.append(el('p', `Across ${data.laptops.length === 1 ? 'this laptop' : 'the pair'}, ${pair} agents were working at any moment on average. Working runs from your message to the agent’s reply, tools included. Waiting is the agent asking you something until you answered. Idle is the agent done with one task and waiting for you to give it the next one, up to your next message. Minutes are summed over sessions, so two agents at once count twice; the average divides that sum by the whole lab window.`, 'muted'));
+
+  const timeline = section(root, 'Timeline'), legend = el('div', undefined, 'legend'); timeline.append(legend);
+  for (const [state, label] of [['working', 'Agent working'], ['waiting', 'Waiting for an answer'], ['idle', 'Idle: waiting for the next task']]) { const item = el('span'); item.append(el('i', undefined, `key ${state}`), document.createTextNode(label)); legend.append(item); }
+  for (const laptop of data.laptops) {
+    timeline.append(el('h3', laptop.student));
+    const scroll = el('div', undefined, 'scroll'), chart = el('div', undefined, 'timeline'), axis = el('div', undefined, 'axis'), ticks = el('div', undefined, 'ticks');
+    axis.append(el('span', 'Minutes since lab start'), ticks); for (let n = 0; n <= 6; n++) ticks.append(el('span', String(Math.round(duration / 60000 * n / 6)))); chart.append(axis); scroll.append(chart); timeline.append(scroll);
+    if (!laptop.sessions.length) chart.append(el('p', 'No sessions recorded; see the notes below.'));
+    for (const s of laptop.sessions) {
+      const row = el('div', undefined, 'row'), label = el('div', s.label, 'label'), track = el('div', undefined, 'track');
+      const [first, last] = span(s), at = t => ((t - start) / duration * 100), min = t => ((t - start) / 60000).toFixed(1);
+      label.append(el('small', `${s.parent ? `${s.tool} · subagent of ${s.parent}` : s.tool} · min ${min(first)}–${min(last)}`)); row.append(label, track); chart.append(row);
+      const line = el('div', undefined, 'span'); line.style.left = at(first) + '%'; line.style.width = (at(last) - at(first)) + '%'; track.append(line);
+      for (const [t, what] of [[first, 'first message'], [last, 'last recorded message']]) {
+        const mark = el('div', undefined, 'mark'); mark.style.left = `min(${at(t)}%, calc(100% - 3px))`; mark.title = `${s.label}: ${what}, minute ${min(t)}`; mark.setAttribute('aria-label', mark.title); track.append(mark);
+      }
+      for (const [a, b] of idleGaps(s)) {
+        const bar = el('div', undefined, 'interval idle');
+        bar.style.left = ((a - start) / duration * 100) + '%'; bar.style.width = ((b - a) / duration * 100) + '%';
+        bar.title = `${s.label}: idle, minute ${((a - start) / 60000).toFixed(1)}–${((b - start) / 60000).toFixed(1)}`; bar.setAttribute('aria-label', bar.title); track.append(bar);
+      }
+      for (const i of s.intervals) {
+        const bar = el('div', undefined, `interval ${i.state}`);
+        bar.style.left = ((stamp(i.start) - start) / duration * 100) + '%'; bar.style.width = ((stamp(i.end) - stamp(i.start)) / duration * 100) + '%';
+        bar.title = `${s.label}: ${i.state}, minute ${minute(i.start)}–${minute(i.end)}`; bar.setAttribute('aria-label', bar.title); track.append(bar);
+      }
+    }
+  }
+
+  const commits = section(root, 'History graph');
+  const histories = data.laptops.filter(l => l.history && l.history.trim());
+  const distinct = [...new Set(histories.map(l => l.history.trim()))];
+  if (!histories.length) commits.append(el('p', 'No history graph recorded.'));
+  else if (distinct.length === 1) commits.append(tree(distinct[0]));
+  else for (const l of histories) commits.append(el('h3', `As seen from ${l.student}’s clone`), tree(l.history.trim()));
+  commits.append(el('p', 'Output of git log --graph --oneline --decorate --all at the end of the lab, coloured as in the terminal: hashes yellow, HEAD cyan, local branches green, remote branches red.', 'muted'));
+
+  const story = section(root, 'What we did');
+  for (const l of data.laptops) {
+    const block = el('div', undefined, 'student'); block.append(el('h3', l.student), el('p', l.summary));
+    if (l.observations.length) { const ul = el('ul'); l.observations.forEach(t => ul.append(el('li', t))); block.append(ul); }
+    if (l.notes && l.notes.trim()) block.append(el('p', `Notes: ${l.notes}`, 'muted'));
+    story.append(block);
+  }
+}
+// The history graph, coloured. Terminal escape codes (git log --color=always) are honoured;
+// plain output is coloured the way git colours it: graph lanes cycling, hash yellow,
+// HEAD cyan, local branches green, remote branches red, tags yellow.
+const LANES = ['c31', 'c32', 'c33', 'c34', 'c35', 'c36'];
+function tree(source) {
+  const pre = el('pre');
+  const piece = (t, cls) => { const s = el('span', t, cls); pre.append(s); };
+  if (/\x1b\[/.test(source)) {
+    let cls = '';
+    for (const part of source.split(/(\x1b\[[0-9;]*m)/)) {
+      const code = part.match(/^\x1b\[([0-9;]*)m$/);
+      if (!code) { if (part) piece(part, cls || undefined); continue; }
+      for (const n of (code[1] || '0').split(';')) {
+        if (n === '0' || n === '' || n === '39') cls = '';
+        else if (n === '1') cls = (cls + ' bold').trim();
+        else if (/^3[0-7]$/.test(n)) cls = 'c' + n;
+        else if (/^9[0-7]$/.test(n)) cls = 'c3' + n[1];
+      }
+    }
+    return pre;
+  }
+  source.split('\n').forEach((line, index) => {
+    if (index) pre.append(document.createTextNode('\n'));
+    const m = line.match(/^([ *|\/\\_.-]*?)([0-9a-f]{7,40})( \((.*?)\))?(.*)$/);
+    const graph = m ? m[1] : line;
+    [...graph].forEach((ch, col) => piece(ch, ch === ' ' ? undefined : LANES[Math.floor(col / 2) % LANES.length]));
+    if (!m) return;
+    piece(m[2], 'c33');
+    if (m[3]) {
+      piece(' (');
+      m[4].split(', ').forEach((ref, i) => {
+        if (i) piece(', ');
+        if (ref.startsWith('HEAD -> ')) { piece('HEAD -> ', 'c36 bold'); piece(ref.slice(8), 'c32 bold'); }
+        else if (ref.startsWith('tag: ')) piece(ref, 'c33 bold');
+        else if (ref.includes('/')) piece(ref, 'c31 bold');
+        else piece(ref, 'c32 bold');
+      });
+      piece(')');
+    }
+    piece(m[5]);
+  });
+  return pre;
+}
+function download(name, content, type) { const url = URL.createObjectURL(new Blob([content], { type })), a = el('a'); a.href = url; a.download = name; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); }
+let current;
+try { current = validate(JSON.parse(document.getElementById('report-data').textContent)); render(current); } catch (error) { document.getElementById('error').textContent = error.message; }
+document.getElementById('files').addEventListener('change', async event => {
+  if (!event.target.files.length) return;
+  try { const parsed = await Promise.all([...event.target.files].map(async f => JSON.parse(await f.text()))); current = combine(parsed); render(current); document.getElementById('error').textContent = ''; }
+  catch (error) { document.getElementById('error').textContent = error.message; }
+  event.target.value = '';
+});
+document.getElementById('save-html').onclick = () => {
+  if (!current) return;
+  const copy = document.documentElement.cloneNode(true);
+  copy.querySelector('#report-data').textContent = JSON.stringify(current).replace(/</g, '\\u003c');
+  copy.querySelector('#report').replaceChildren(); copy.querySelector('#error').textContent = ''; copy.querySelector('#window').textContent = '';
+  download('lab03-report.html', '<!doctype html>\n' + copy.outerHTML, 'text/html');
+};
+</script>
+</body></html>
