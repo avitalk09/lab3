@@ -11,7 +11,9 @@
 // With levels.js present, the arena changes on every level up (arena = (level - 1) % 3).
 // Without it, arenas cycle every `fallbackCoinsPerArena` coins (0 disables) and the N key
 // cycles manually. Walls of `wallThickness` px line the play field; the physics world bounds
-// are inset to their inner face so the player and drones stop against them.
+// are inset to their inner face so the player and drones stop against them. Each arena also
+// has its own layout of solid obstacles inside the field (static Arcade bodies): the player
+// is blocked by them, drones bounce off them, and a coin that lands inside one is relocated.
 (function () {
   const defaults = {
     startIndex: 0,
@@ -97,6 +99,12 @@
   const CLASSIC = {
     name: 'CLASSIC',
     accent: '#71e8ce',
+    obstacleStyle: { fill: 0x3e5578, stroke: 0x9db6dd, glow: 0x9db6dd },
+    obstacles: [
+      { x: 250, y: 200, w: 22, h: 90 }, { x: 550, y: 200, w: 22, h: 90 },
+      { x: 190, y: 360, w: 150, h: 22 }, { x: 610, y: 360, w: 150, h: 22 },
+      { x: 400, y: 420, w: 22, h: 90 }
+    ],
     bg: COIN_DASH.colors.background,
     pageBorder: '#34445e',
     pageGlow: 'none',
@@ -116,6 +124,12 @@
   const NEON = {
     name: 'NEON CITY',
     accent: '#8b5cf6',
+    obstacleStyle: { fill: 0x1f1b4a, stroke: 0xc084fc, glow: 0x8b5cf6 },
+    obstacles: [
+      { x: 200, y: 250, w: 22, h: 170 }, { x: 600, y: 250, w: 22, h: 170 },
+      { x: 400, y: 150, w: 130, h: 22 }, { x: 400, y: 400, w: 130, h: 22 },
+      { x: 90, y: 440, w: 70, h: 22 }, { x: 710, y: 440, w: 70, h: 22 }
+    ],
     bg: 0x05060f,
     pageBorder: '#6d5dfc',
     pageGlow: '0 0 24px rgba(99, 102, 241, .45)',
@@ -127,6 +141,7 @@
       m.walls = m.keep(s.add.graphics().setDepth(DEPTH.walls));
       drawWalls(m.walls, { brick: 0x1f1b4a, mortar: 0x07071a, light: 0xc084fc });
       m.wallGlow = m.keep(s.add.graphics().setDepth(DEPTH.walls));
+      m.obstacleGlow = m.keep(s.add.graphics().setDepth(DEPTH.walls));
       m.lightSpots = [
         { x: 0.2, y: 0.3, r: 150, color: 0x3b82f6, speed: 0.11, phase: 0 },
         { x: 0.75, y: 0.65, r: 180, color: 0x7c3aed, speed: 0.08, phase: 2.1 },
@@ -180,6 +195,7 @@
       innerFace(wg, 6, tube, 0.18 + 0.1 * pulse);
       innerFace(wg, 2, tube, 0.9);
       innerFace(wg, 1, 0xffffff, 0.35 + 0.25 * pulse);
+      m.drawObstacleGlow(m.obstacleGlow, tube, 0.25 + 0.2 * pulse);
     }
   };
 
@@ -187,6 +203,13 @@
   const LAVA = {
     name: 'LAVA ZONE',
     accent: '#fb923c',
+    obstacleStyle: { fill: 0x4a1c12, stroke: 0xfb923c, glow: 0xf97316 },
+    obstacles: [
+      { x: 180, y: 190, w: 44, h: 44 }, { x: 620, y: 190, w: 44, h: 44 },
+      { x: 180, y: 400, w: 44, h: 44 }, { x: 620, y: 400, w: 44, h: 44 },
+      { x: 400, y: 150, w: 160, h: 22 }, { x: 300, y: 330, w: 22, h: 110 },
+      { x: 500, y: 330, w: 22, h: 110 }, { x: 400, y: 450, w: 44, h: 44 }
+    ],
     bg: 0x1a0606,
     pageBorder: '#f97316',
     pageGlow: '0 0 26px rgba(249, 115, 22, .45)',
@@ -201,6 +224,7 @@
       m.walls = m.keep(s.add.graphics().setDepth(DEPTH.walls));
       drawWalls(m.walls, { brick: 0x4a1c12, mortar: 0x1c0806, light: 0xfb923c });
       m.wallGlow = m.keep(s.add.graphics().setDepth(DEPTH.walls));
+      m.obstacleGlow = m.keep(s.add.graphics().setDepth(DEPTH.walls));
       m.haze = m.keep(s.add.rectangle(c.width / 2, c.height / 2, c.width, c.height, 0xf97316, 0.04)
         .setDepth(DEPTH.haze).setBlendMode(Phaser.BlendModes.ADD));
 
@@ -288,6 +312,7 @@
       wg.clear();
       innerFace(wg, 6, 0xea580c, 0.15 + 0.15 * flicker);
       innerFace(wg, 2, lerpColor(0xf97316, 0xfbbf24, flicker), 0.85);
+      m.drawObstacleGlow(m.obstacleGlow, lerpColor(0xdc2626, 0xf97316, flicker), 0.25 + 0.25 * flicker);
     }
   };
 
@@ -321,6 +346,11 @@
         this.keyHandler = () => this.next();
         scene.input.keyboard.on('keydown-' + cfg.cycleKey, this.keyHandler);
       }
+      // Solid obstacles inside the field. Colliders are attached on the first update,
+      // once the scene has created the player and the drones.
+      this.obstacles = scene.physics.add.staticGroup();
+      this.obstacleRects = [];
+      this.colliders = null;
       this.setArena(cfg.startIndex, { announce: false, instant: true });
     }
 
@@ -374,9 +404,54 @@
       this.theme = ARENAS[index];
       this.scene.cameras.main.setBackgroundColor(this.theme.bg);
       this.theme.create(this);
+      this.buildObstacles();
       this.theme.update(this, this.elapsed, 0);
       const el = document.getElementById('game');
       if (el) { el.style.borderColor = this.theme.pageBorder; el.style.boxShadow = this.theme.pageGlow; }
+    }
+
+    // Creates this arena's obstacles as static bodies. An obstacle that would land on top of
+    // the player when switching arenas is skipped, so the player is never trapped inside one.
+    buildObstacles() {
+      this.obstacles.clear(true, true);
+      this.obstacleRects = [];
+      const s = this.scene, style = this.theme.obstacleStyle;
+      const player = s.player;
+      for (const o of this.theme.obstacles || []) {
+        const rect = new Phaser.Geom.Rectangle(o.x - o.w / 2, o.y - o.h / 2, o.w, o.h);
+        if (player && Phaser.Geom.Intersects.RectangleToRectangle(
+          rect, new Phaser.Geom.Rectangle(player.x - 24, player.y - 24, 48, 48))) continue;
+        const block = s.add.rectangle(o.x, o.y, o.w, o.h, style.fill)
+          .setStrokeStyle(2, style.stroke, 0.9).setDepth(DEPTH.walls);
+        this.obstacles.add(block);
+        this.obstacleRects.push(rect);
+      }
+    }
+
+    ensureColliders() {
+      if (this.colliders) return;
+      const s = this.scene;
+      if (!s.player || !s.player.body) return;
+      this.colliders = [s.physics.add.collider(s.player, this.obstacles)];
+      if (s.drones) this.colliders.push(s.physics.add.collider(s.drones, this.obstacles));
+    }
+
+    // The scene places coins at random; if one lands inside an obstacle, ask for another spot.
+    keepCoinClear() {
+      const s = this.scene, coin = s.coin;
+      if (!coin || !coin.body || s.finished || typeof s.placeCoin !== 'function') return;
+      const area = new Phaser.Geom.Rectangle(coin.x - 18, coin.y - 18, 36, 36);
+      for (const r of this.obstacleRects) {
+        if (Phaser.Geom.Intersects.RectangleToRectangle(area, r)) { s.placeCoin(); return; }
+      }
+    }
+
+    drawObstacleGlow(gfx, color, alpha) {
+      gfx.clear();
+      for (const r of this.obstacleRects) {
+        gfx.lineStyle(8, color, alpha * 0.35); gfx.strokeRect(r.x - 4, r.y - 4, r.width + 8, r.height + 8);
+        gfx.lineStyle(3, color, alpha); gfx.strokeRect(r.x - 1, r.y - 1, r.width + 2, r.height + 2);
+      }
     }
 
     showName() {
@@ -408,6 +483,8 @@
       const dt = Math.min(delta, 50) / 1000;
       this.elapsed += dt;
       if (this.theme) this.theme.update(this, this.elapsed, dt);
+      this.ensureColliders();
+      this.keepCoinClear();
 
       // Stand-in progression until a level system drives arenas: cycle every N coins.
       const per = COIN_DASH.arenas.fallbackCoinsPerArena;
@@ -429,6 +506,12 @@
       for (const o of this.objects) o.destroy();
       this.objects = [];
       this.theme = null;
+      const el = document.getElementById('game');
+      if (el) { el.style.borderColor = ''; el.style.boxShadow = ''; } // back to the page default
+      // The physics system tears down the static group and the colliders itself at shutdown.
+      this.colliders = null;
+      this.obstacles = null;
+      this.obstacleRects = [];
     }
   }
 
