@@ -157,6 +157,19 @@ async function main() {
     check(e.length === 3 && e.every(x => x.type === 'drone'), 'after restart: three drones again');
     check(await evaluate('__scene().events.listenerCount("enemy-type-introduced")') === 1, 'after restart: single intro listener');
 
+    // Difficulty multiplier must scale every enemy type, not just drones.
+    if (await evaluate('!!window.COIN_DASH_DIFFICULTY')) {
+      await evaluate('window.coinDashGame.scene.getScene("CoinDash").scene.start("CoinDash", { difficulty: "HARD" }); true');
+      await sleep(1200);
+      const hard = await evaluate('__enemies()');
+      const sp = hard.length ? Math.hypot(hard[0].vx, hard[0].vy) : 0;
+      check(Math.abs(sp - 105 * 1.5) < 1, `HARD mode drones move at 157.5 (got ${sp.toFixed(1)})`);
+      await evaluate('__scene().enemies.spawn("speed"); true');
+      const spd = (await evaluate('__enemies()')).find(x => x.type === 'speed');
+      check(spd && Math.abs(Math.hypot(spd.vx, spd.vy) - 240 * 1.5) < 1, 'HARD mode speeder moves at 360');
+      await evaluate('window.COIN_DASH_DIFFICULTY.setCurrent("NORMAL"); true');
+    }
+
     check(exceptions.length === 0, `no uncaught exceptions ${exceptions.length ? JSON.stringify(exceptions) : ''}`);
     check(consoleErrors.length === 0, `no console errors ${consoleErrors.length ? JSON.stringify(consoleErrors) : ''}`);
     ws.close();
