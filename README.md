@@ -37,7 +37,9 @@ laptops' JSON files together and save the combined HTML. Use the same time windo
 - `index.html`: page and script loading.
 - `style.css`: page appearance.
 - `settings.js`: round duration, speeds, colours and dimensions.
+- `enemies.js`: enemy behaviours (drone, chaser, speeder, patrol), spawning, introduction schedule and difficulty hooks.
 - `game.js`: scene, input, collisions, score and end-of-round behaviour.
+- `tests/enemies.test.js`: Node tests for the enemy module (`node --test tests/*.test.js`).
 - `vendor/phaser-3.90.0.min.js`: the pinned Phaser runtime, byte for byte the file published at
   `https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js`; `vendor/LICENSE.phaser.txt` is its MIT licence.
 

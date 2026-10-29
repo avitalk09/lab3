@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH */
+/* global Phaser, COIN_DASH, COIN_DASH_ENEMIES */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -18,20 +18,20 @@ class CoinDash extends Phaser.Scene {
     this.physics.add.existing(this.coin);
     this.coin.body.setCircle(9);
     this.placeCoin();
-    this.drones = this.physics.add.group();
-    for (let i = 0; i < c.droneCount; i++) {
-      const drone = this.add.rectangle(90 + i * 270, 100, 26, 26, c.colors.drone);
-      this.drones.add(drone);
-      drone.body.setCollideWorldBounds(true).setBounce(1, 1);
-      const angle = (35 + i * 105) * Math.PI / 180;
-      drone.body.setVelocity(Math.cos(angle) * c.droneSpeed, Math.sin(angle) * c.droneSpeed);
-    }
+    // Enemies are managed by enemies.js; the schedule in settings introduces
+    // each type over the round. this.drones stays the group used for collisions.
+    this.enemies = COIN_DASH_ENEMIES.createEnemyManager(this, { player: this.player });
+    this.drones = this.enemies.group;
+    this.events.on('enemy-type-introduced', (type, label) => this.announce(`${label} incoming!`));
+    this.events.once('shutdown', () => this.events.off('enemy-type-introduced'));
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.score++;
       this.placeCoin();
     });
-    this.physics.add.overlap(this.player, this.drones, () => this.finish('A drone caught you!'));
+    this.physics.add.overlap(this.player, this.drones,
+      (player, enemy) => this.finish(`${this.enemies.describe(enemy)} caught you!`),
+      (player, enemy) => this.enemies.isArmed(enemy));
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
@@ -49,8 +49,19 @@ class CoinDash extends Phaser.Scene {
     this.coin.body.reset(x, y);
   }
 
-  update() {
+  announce(message) {
+    const c = COIN_DASH;
+    const text = this.add.text(c.width / 2, 70, message,
+      { font: '20px monospace', color: '#ffffff' }).setOrigin(0.5).setAlpha(0);
+    this.tweens.add({
+      targets: text, alpha: { from: 0, to: 1 }, y: 60, duration: 250, yoyo: true, hold: 900,
+      onComplete: () => text.destroy()
+    });
+  }
+
+  update(time, delta) {
     if (this.finished) return;
+    this.enemies.update(time, delta);
     const dx = Number(this.cursors.right.isDown || this.keys.D.isDown)
       - Number(this.cursors.left.isDown || this.keys.A.isDown);
     const dy = Number(this.cursors.down.isDown || this.keys.S.isDown)
