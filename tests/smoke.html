@@ -10,12 +10,13 @@ window.addEventListener('error', e => __errors.push(String(e.message)));
 <script src="../vendor/phaser-3.90.0.min.js"></script>
 <script src="../settings.js"></script>
 <script src="../levels.js"></script>
+<script src="../screens.js"></script>
 <script src="../game.js"></script>
 <script>
 const out = (o) => document.getElementById('out').textContent = JSON.stringify(o);
 const log = {};
 let t = 1000;
-function frames(n) { for (let i = 0; i < n; i++) { t += 16; coinDashGame.step(t, 16); } }
+function frames(n) { for (let i = 0; i < n; i++) { t += 16; coinDashGame.loop.step(t); } }
 function scene() { return window.coinDashGame && coinDashGame.scene.getScene('CoinDash'); }
 function speeds(s) { return s.drones.getChildren().map(d => Math.round(d.body.velocity.length())); }
 function hasLevelUpText(s) { return s.children.list.some(ch => ch.type === 'Text' && /LEVEL UP/.test(ch.text)); }
@@ -26,6 +27,8 @@ function grab(s) { parkDrones(s); s.player.setPosition(s.coin.x, s.coin.y); s.pl
 let sceneLevelEvents = [], globalEvents = [], levelUpSeen = [];
 CoinDashLevels.onLevelChange(e => globalEvents.push(e.level));
 function run() {
+  const mgr = coinDashGame.scene;
+  if (mgr.isActive('Menu')) { mgr.stop('Menu'); mgr.start('CoinDash'); }
   let s = scene();
   if (!s || !s.levels || !s.drones) { frames(1); return setTimeout(run, 20); }
   try {
