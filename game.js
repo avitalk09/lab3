@@ -15,8 +15,12 @@ class CoinDash extends Phaser.Scene {
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
     this.hud = this.add.text(18, 12, '', { font: '18px monospace', color: '#ffffff' });
-    this.levelText = this.add.text(c.width / 2, 12, `LEVEL ${this.levels.level}`,
-      { font: 'bold 18px monospace', color: '#ffd166' }).setOrigin(0.5, 0);
+    // Level HUD, top-right so it never overlaps the coins/time line: "LEVEL 2 · 7/10" + progress bar.
+    this.levelText = this.add.text(c.width - 18, 12, '',
+      { font: 'bold 18px monospace', color: '#ffd166' }).setOrigin(1, 0);
+    this.levelBarBg = this.add.rectangle(c.width - 18, 37, 180, 5, 0x34445e).setOrigin(1, 0);
+    this.levelBar = this.add.rectangle(c.width - 18 - 180, 37, 0, 5, 0xffd166).setOrigin(0, 0);
+    this.refreshLevelHud();
     this.player = this.add.rectangle(c.width / 2, c.height / 2, 24, 24, c.colors.player);
     this.physics.add.existing(this.player);
     this.player.body.setCollideWorldBounds(true);
@@ -32,6 +36,7 @@ class CoinDash extends Phaser.Scene {
       if (this.finished) return;
       this.score++;
       this.levels.recordCoin(); // counts coins, not score points (combos may multiply score)
+      this.refreshLevelHud();
       this.placeCoin();
     });
     this.physics.add.overlap(this.player, this.drones, () => this.finish('A drone caught you!'));
@@ -51,6 +56,14 @@ class CoinDash extends Phaser.Scene {
     this.coin.setPosition(x, y);
     this.coin.body.reset(x, y);
     this.coinPlacedAt = this.time.now;
+  }
+
+  /** Shows the level and how many coins remain before the next one. */
+  refreshLevelHud() {
+    const lv = this.levels;
+    const into = Math.min(lv.coinsIntoLevel, lv.coinsPerLevel);
+    this.levelText.setText(`LEVEL ${lv.level} \u00b7 ${into}/${lv.coinsPerLevel}`);
+    this.levelBar.width = 180 * (into / lv.coinsPerLevel);
   }
 
   /** Current enemy speed for this level. */
@@ -81,7 +94,7 @@ class CoinDash extends Phaser.Scene {
   onLevelChange({ level, previousLevel, difficulty }) {
     const c = COIN_DASH;
     this.difficulty = difficulty;
-    this.levelText.setText(`LEVEL ${level}`);
+    this.refreshLevelHud();
     // Speed up existing enemies, keeping their direction.
     const speed = this.droneSpeed();
     this.drones.getChildren().forEach((d) => {
@@ -102,14 +115,20 @@ class CoinDash extends Phaser.Scene {
   showLevelUp(level) {
     const c = COIN_DASH;
     this.cameras.main.flash(220, 255, 209, 102);
-    const label = this.add.text(c.width / 2, c.height / 2, `LEVEL UP!\nLevel ${level}`, {
+    const label = this.add.text(c.width / 2, c.height / 2,
+      `LEVEL UP!\nLevel ${level}`, {
       font: 'bold 52px monospace', color: '#ffd166', stroke: '#0a1120', strokeThickness: 8,
       align: 'center', lineSpacing: 6
     }).setOrigin(0.5).setScale(0.2).setAlpha(0).setDepth(10);
+    const hint = this.add.text(c.width / 2, c.height / 2 + 80,
+      `${this.levels.coinsPerLevel} more coins for level ${level + 1}`,
+      { font: '20px monospace', color: '#ffffff', stroke: '#0a1120', strokeThickness: 6 }
+    ).setOrigin(0.5).setAlpha(0).setDepth(10);
     this.tweens.add({ targets: label, scale: 1, alpha: 1, duration: 380, ease: 'Back.Out' });
+    this.tweens.add({ targets: hint, alpha: 1, delay: 250, duration: 300 });
     this.tweens.add({
-      targets: label, alpha: 0, y: c.height / 2 - 70, delay: 950, duration: 550, ease: 'Quad.In',
-      onComplete: () => label.destroy()
+      targets: [label, hint], alpha: 0, y: '-=70', delay: 1100, duration: 550, ease: 'Quad.In',
+      onComplete: () => { label.destroy(); hint.destroy(); }
     });
   }
 

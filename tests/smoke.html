@@ -36,7 +36,7 @@ function run() {
       if (n % 10 === 0) levelUpSeen.push(hasLevelUpText(s));
     }
     log.after25 = { score: s.score, coins: s.levels.coins, level: s.levels.level, drones: s.drones.getLength(),
-      speeds: speeds(s), hud: s.levelText.text, levelUpSeen, sceneLevelEvents, globalEvents, coinLifetime: s.difficulty.coinLifetimeMs,
+      speeds: speeds(s), hud: s.levelText.text, bar: Math.round(s.levelBar.width), levelUpSeen, sceneLevelEvents, globalEvents, coinLifetime: s.difficulty.coinLifetimeMs,
       timerSecondsLeft: Math.ceil((s.deadline - s.time.now) / 1000), finished: s.finished };
     // Coin timer at level 4: collect 10 more coins then wait with the coin uncollected.
     for (let n = 0; n < 10; n++) { grab(s); frames(3); }
