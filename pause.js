@@ -14,6 +14,7 @@ class PauseController extends Phaser.Events.EventEmitter {
     scene.input.keyboard.addCapture(keys); // stop SPACE from scrolling the page
     keys.forEach(key => scene.input.keyboard.on(`keydown-${key}`, this.onKey, this));
     this.buildOverlay();
+    this.buildButton();
     this.buildIndicator();
     scene.events.once(Phaser.Scenes.Events.SHUTDOWN, this.shutdown, this);
   }
@@ -39,6 +40,7 @@ class PauseController extends Phaser.Events.EventEmitter {
     scene.tweens.pauseAll();
     this.overlay.setVisible(true);
     this.indicator.setVisible(true);
+    this.setButtonIcon();
     this.emit('pause');
   }
 
@@ -51,6 +53,7 @@ class PauseController extends Phaser.Events.EventEmitter {
     scene.tweens.resumeAll();
     this.overlay.setVisible(false);
     this.indicator.setVisible(false);
+    this.setButtonIcon();
     this.emit('resume', scene.time.now - this.pausedAt);
   }
 
@@ -67,8 +70,31 @@ class PauseController extends Phaser.Events.EventEmitter {
       .setDepth(1000).setScrollFactor(0).setVisible(false);
   }
 
+  // Clickable HUD button in the top-right corner: shows pause bars while playing, a play arrow while paused.
+  buildButton() {
+    const x = this.scene.scale.width - 34;
+    const y = 22;
+    const bg = this.scene.add.rectangle(x, y, 32, 26, 0x24334b).setStrokeStyle(1, 0x71e8ce);
+    this.pauseIcon = this.scene.add.container(0, 0, [
+      this.scene.add.rectangle(x - 4, y, 4, 12, 0xffffff),
+      this.scene.add.rectangle(x + 4, y, 4, 12, 0xffffff)
+    ]);
+    this.playIcon = this.scene.add.triangle(x + 1, y, 0, 0, 0, 12, 10, 6, 0xffffff).setVisible(false);
+    bg.setInteractive({ useHandCursor: true })
+      .on('pointerover', () => bg.setFillStyle(0x34486a))
+      .on('pointerout', () => bg.setFillStyle(0x24334b))
+      .on('pointerdown', () => this.toggle());
+    this.button = this.scene.add.container(0, 0, [bg, this.pauseIcon, this.playIcon])
+      .setDepth(1002).setScrollFactor(0);
+  }
+
+  setButtonIcon() {
+    this.pauseIcon.setVisible(!this.paused);
+    this.playIcon.setVisible(this.paused);
+  }
+
   buildIndicator() {
-    const x = this.scene.scale.width - 18;
+    const x = this.scene.scale.width - 62;
     const label = this.scene.add.text(x, 13, 'PAUSED', { font: '16px monospace', color: '#ffd166' })
       .setOrigin(1, 0);
     const barX = x - label.width - 16;
