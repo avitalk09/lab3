@@ -19,7 +19,7 @@
     nameDuration: 1500,
     transitionDuration: 420,
     cycleKey: 'N',
-    wallThickness: 12
+    wallThickness: 16
   };
   window.COIN_DASH.arenas = Object.assign({}, defaults, window.COIN_DASH.arenas);
 
@@ -62,18 +62,35 @@
     gfx.strokeRect(t, 44 + t, c.width - 2 * t, c.height - 44 - 2 * t);
   }
 
-  // Solid wall blocks with a bevelled inner edge and joints every `seg` px.
-  function drawWalls(gfx, fill, edge, joint, seg) {
-    const c = COIN_DASH, t = COIN_DASH.arenas.wallThickness;
-    for (const r of wallRects()) { gfx.fillStyle(fill, 1); gfx.fillRect(r.x, r.y, r.w, r.h); }
-    innerFace(gfx, 2, edge, 0.9);
-    gfx.lineStyle(1, joint, 0.5);
-    for (let x = seg; x < c.width; x += seg) {
-      gfx.lineBetween(x, 44, x, 44 + t); gfx.lineBetween(x, c.height - t, x, c.height);
+  // Brick walls: mortar background, two staggered rows of bricks, a bright bevel on the
+  // inner face and a soft shadow cast onto the play field.
+  function drawWalls(gfx, pal) {
+    const c = COIN_DASH, t = COIN_DASH.arenas.wallThickness, top = 44;
+    const rows = 2, bh = t / rows, bl = 34, gap = 2;
+    for (const r of wallRects()) {
+      gfx.fillStyle(pal.mortar, 1); gfx.fillRect(r.x, r.y, r.w, r.h);
+      const horizontal = r.w > r.h;
+      for (let row = 0; row < rows; row++) {
+        const off = row % 2 ? bl / 2 : 0;
+        const len = horizontal ? r.w : r.h, start = horizontal ? r.x : r.y;
+        for (let a = start - off; a < start + len; a += bl) {
+          const a0 = Math.max(a, start), a1 = Math.min(a + bl - gap, start + len);
+          if (a1 <= a0) continue;
+          gfx.fillStyle(pal.brick, 1);
+          if (horizontal) gfx.fillRect(a0, r.y + row * bh + gap / 2, a1 - a0, bh - gap);
+          else gfx.fillRect(r.x + row * bh + gap / 2, a0, bh - gap, a1 - a0);
+          gfx.fillStyle(pal.light, 0.18);                      // brick top highlight
+          if (horizontal) gfx.fillRect(a0, r.y + row * bh + gap / 2, a1 - a0, 2);
+          else gfx.fillRect(r.x + row * bh + gap / 2, a0, 2, a1 - a0);
+        }
+      }
     }
-    for (let y = 44 + seg; y < c.height; y += seg) {
-      gfx.lineBetween(0, y, t, y); gfx.lineBetween(c.width - t, y, c.width, y);
-    }
+    innerFace(gfx, 2, pal.light, 1);
+    gfx.lineStyle(1, 0xffffff, 0.35);
+    gfx.strokeRect(t - 2, top + t - 2, c.width - 2 * t + 4, c.height - top - 2 * t + 4);
+    // Shadow on the field just inside the wall face.
+    gfx.lineStyle(4, 0x000000, 0.28);
+    gfx.strokeRect(t + 3, top + t + 3, c.width - 2 * t - 6, c.height - top - 2 * t - 6);
   }
 
   // ---------------------------------------------------------------- ARENA 1: CLASSIC
@@ -90,7 +107,7 @@
         c.colors.background, 1, 0x24334b, 0.45).setDepth(DEPTH.background));
       // Plain slate walls in the original palette.
       const w = m.keep(m.scene.add.graphics().setDepth(DEPTH.walls));
-      drawWalls(w, 0x24334b, 0x4a5f85, 0x101c31, 40);
+      drawWalls(w, { brick: 0x3e5578, mortar: 0x16233a, light: 0x9db6dd });
     },
     update() {}
   };
@@ -108,7 +125,7 @@
       m.grid = m.keep(s.add.graphics().setDepth(DEPTH.decor));
       m.border = m.keep(s.add.graphics().setDepth(DEPTH.border));
       m.walls = m.keep(s.add.graphics().setDepth(DEPTH.walls));
-      drawWalls(m.walls, 0x0b0d1f, 0x312e81, 0x1e1b4b, 80);
+      drawWalls(m.walls, { brick: 0x1f1b4a, mortar: 0x07071a, light: 0xc084fc });
       m.wallGlow = m.keep(s.add.graphics().setDepth(DEPTH.walls));
       m.lightSpots = [
         { x: 0.2, y: 0.3, r: 150, color: 0x3b82f6, speed: 0.11, phase: 0 },
@@ -182,7 +199,7 @@
       m.embers = m.keep(s.add.graphics().setDepth(DEPTH.decor));
       m.border = m.keep(s.add.graphics().setDepth(DEPTH.border));
       m.walls = m.keep(s.add.graphics().setDepth(DEPTH.walls));
-      drawWalls(m.walls, 0x2a0c0a, 0x7f1d1d, 0x1a0606, 60);
+      drawWalls(m.walls, { brick: 0x4a1c12, mortar: 0x1c0806, light: 0xfb923c });
       m.wallGlow = m.keep(s.add.graphics().setDepth(DEPTH.walls));
       m.haze = m.keep(s.add.rectangle(c.width / 2, c.height / 2, c.width, c.height, 0xf97316, 0.04)
         .setDepth(DEPTH.haze).setBlendMode(Phaser.BlendModes.ADD));
