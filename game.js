@@ -1,16 +1,25 @@
-/* global Phaser, COIN_DASH */
+/* global Phaser, COIN_DASH, COIN_DASH_DIFFICULTY, DifficultySelect */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
+
+  init(data) {
+    // A caller may pass { difficulty: 'HARD' }; otherwise use the saved/current mode.
+    if (data && data.difficulty) COIN_DASH_DIFFICULTY.setCurrent(data.difficulty);
+    this.difficulty = COIN_DASH_DIFFICULTY.getCurrent();
+  }
 
   create() {
     const c = COIN_DASH;
     this.score = 0;
     this.finished = false;
-    this.deadline = this.time.now + c.roundSeconds * 1000;
+    // Set on the first update: the scene clock is stale inside create() when another scene ran first.
+    this.deadline = null;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
     this.hud = this.add.text(18, 12, '', { font: '18px monospace', color: '#ffffff' });
+    this.difficultyHud = this.add.text(c.width - 18, 12, this.difficulty.label.toUpperCase(),
+      { font: 'bold 18px monospace', color: this.difficulty.colorCss }).setOrigin(1, 0);
     this.player = this.add.rectangle(c.width / 2, c.height / 2, 24, 24, c.colors.player);
     this.physics.add.existing(this.player);
     this.player.body.setCollideWorldBounds(true);
@@ -19,12 +28,13 @@ class CoinDash extends Phaser.Scene {
     this.coin.body.setCircle(9);
     this.placeCoin();
     this.drones = this.physics.add.group();
+    const droneSpeed = COIN_DASH_DIFFICULTY.enemySpeed(c.droneSpeed);
     for (let i = 0; i < c.droneCount; i++) {
       const drone = this.add.rectangle(90 + i * 270, 100, 26, 26, c.colors.drone);
       this.drones.add(drone);
       drone.body.setCollideWorldBounds(true).setBounce(1, 1);
       const angle = (35 + i * 105) * Math.PI / 180;
-      drone.body.setVelocity(Math.cos(angle) * c.droneSpeed, Math.sin(angle) * c.droneSpeed);
+      drone.body.setVelocity(Math.cos(angle) * droneSpeed, Math.sin(angle) * droneSpeed);
     }
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
@@ -35,6 +45,7 @@ class CoinDash extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    this.input.keyboard.on('keydown-ESC', () => this.scene.start('DifficultySelect', { next: 'CoinDash' }));
   }
 
   placeCoin() {
@@ -51,6 +62,7 @@ class CoinDash extends Phaser.Scene {
 
   update() {
     if (this.finished) return;
+    if (this.deadline === null) this.deadline = this.time.now + COIN_DASH.roundSeconds * 1000;
     const dx = Number(this.cursors.right.isDown || this.keys.D.isDown)
       - Number(this.cursors.left.isDown || this.keys.A.isDown);
     const dy = Number(this.cursors.down.isDown || this.keys.S.isDown)
@@ -67,9 +79,9 @@ class CoinDash extends Phaser.Scene {
     this.finished = true;
     this.physics.pause();
     const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, 150, 0x0a1120, 0.95);
+    this.add.rectangle(c.width / 2, c.height / 2, 460, 190, 0x0a1120, 0.95);
     this.add.text(c.width / 2, c.height / 2,
-      `${reason}\n${this.score} coins collected\nPress R to try again`,
+      `${reason}\n${this.score} coins collected on ${this.difficulty.label}\nPress R to try again\nESC to change difficulty`,
       { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
     ).setOrigin(0.5);
   }
@@ -82,5 +94,5 @@ window.coinDashGame = new Phaser.Game({
   backgroundColor: COIN_DASH.colors.background,
   physics: { default: 'arcade', arcade: { debug: false } },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
-  scene: CoinDash
+  scene: [DifficultySelect, CoinDash]
 });
