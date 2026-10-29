@@ -62,10 +62,10 @@ class CoinDash extends Phaser.Scene {
 
   createComboHud() {
     const c = COIN_DASH;
-    this.comboText = this.add.text(c.width - 70, 22, '', {
+    this.comboText = this.add.text(c.width - 70, c.height - 34, '', {
       font: 'bold 26px monospace', color: '#ffd166', stroke: '#0a1120', strokeThickness: 4
     }).setOrigin(0.5).setDepth(10);
-    this.comboBar = this.add.rectangle(c.width - 110, 40, 80, 4, c.colors.coin)
+    this.comboBar = this.add.rectangle(c.width - 110, c.height - 14, 80, 4, c.colors.coin)
       .setOrigin(0, 0.5).setDepth(10);
   }
 
