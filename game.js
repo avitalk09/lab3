@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH, COIN_DASH_DIFFICULTY, DifficultySelect */
+/* global Phaser, COIN_DASH, COIN_DASH_DIFFICULTY, COIN_DASH_SCREENS, DifficultySelect */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -12,8 +12,8 @@ class CoinDash extends Phaser.Scene {
     const c = COIN_DASH;
     this.score = 0;
     this.finished = false;
-    // Set on the first update: the scene clock is stale inside create() when another scene ran first.
-    this.deadline = null;
+    // The scene clock is stale until its first update, so read the live game loop time.
+    this.deadline = this.game.loop.time + c.roundSeconds * 1000;
     this.physics.world.setBounds(0, 44, c.width, c.height - 44);
     this.add.grid(c.width / 2, c.height / 2, c.width, c.height, 40, 40,
       c.colors.background, 1, 0x24334b, 0.45);
@@ -62,7 +62,6 @@ class CoinDash extends Phaser.Scene {
 
   update() {
     if (this.finished) return;
-    if (this.deadline === null) this.deadline = this.time.now + COIN_DASH.roundSeconds * 1000;
     const dx = Number(this.cursors.right.isDown || this.keys.D.isDown)
       - Number(this.cursors.left.isDown || this.keys.A.isDown);
     const dy = Number(this.cursors.down.isDown || this.keys.S.isDown)
@@ -78,12 +77,9 @@ class CoinDash extends Phaser.Scene {
     if (this.finished) return;
     this.finished = true;
     this.physics.pause();
-    const c = COIN_DASH;
-    this.add.rectangle(c.width / 2, c.height / 2, 460, 190, 0x0a1120, 0.95);
-    this.add.text(c.width / 2, c.height / 2,
-      `${reason}\n${this.score} coins collected on ${this.difficulty.label}\nPress R to try again\nESC to change difficulty`,
-      { font: '24px monospace', color: '#ffffff', align: 'center', lineSpacing: 12 }
-    ).setOrigin(0.5);
+    // Brief pause so the player sees what happened, then hand off to the Game Over screen.
+    this.time.delayedCall(700, () => this.scene.start('GameOver',
+      { score: this.score, reason, difficulty: this.difficulty.key }));
   }
 }
 window.coinDashGame = new Phaser.Game({
@@ -94,5 +90,5 @@ window.coinDashGame = new Phaser.Game({
   backgroundColor: COIN_DASH.colors.background,
   physics: { default: 'arcade', arcade: { debug: false } },
   scale: { mode: Phaser.Scale.FIT, autoCenter: Phaser.Scale.CENTER_HORIZONTALLY },
-  scene: [DifficultySelect, CoinDash]
+  scene: [COIN_DASH_SCREENS.MenuScene, DifficultySelect, CoinDash, COIN_DASH_SCREENS.GameOverScene]
 });

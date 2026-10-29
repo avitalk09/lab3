@@ -208,6 +208,12 @@
           });
         }
       });
+      if (this.scene.get('Menu')) {
+        this.add.text(c.width / 2, c.height - 22, 'ESC: back to menu', {
+          font: '13px monospace', color: '#55657f'
+        }).setOrigin(0.5);
+        this.input.keyboard.once('keydown-ESC', () => this.scene.start('Menu'));
+      }
       this.cameras.main.fadeIn(200, 10, 17, 32);
     }
   }
