@@ -15,7 +15,9 @@
 //   group                 Phaser physics group holding every live enemy
 //   spawn(type, opts)     spawn one enemy; returns it or null if capped
 //   spawnMany(type, n)    spawn several; returns the array that fit the cap
-//   update(time, delta)   drive behaviours and the introduction schedule
+//   update(time, delta)   drive behaviours and the introduction schedule;
+//                         the schedule clock only advances through delta,
+//                         so skipping update() while paused freezes it
 //   setDifficulty(mods)   { speed, spawnRate, maxEnemies } multipliers/limits
 //   getModifiers()        current normalised modifiers
 //   isArmed(enemy)        false during the short spawn grace period
@@ -284,7 +286,10 @@
     );
     const group = options.group || scene.physics.add.group();
     const player = options.player || null;
-    const startTime = options.startTime != null ? options.startTime : nowOf(scene);
+    // Round clock in ms, advanced by the delta passed to update(). The host
+    // scene simply stops calling update() while paused, so the schedule
+    // freezes with it instead of dumping every missed spawn on resume.
+    let elapsedMs = options.startElapsedMs || 0;
     let modifiers = normaliseModifiers(
       options.modifiers || (settings.difficulty && settings.difficulty.enemies) || settings.enemyModifiers
     );
@@ -468,7 +473,8 @@
 
     function update(time, delta) {
       const dt = Math.min(0.1, (delta || 16) / 1000);
-      runSchedule((time - startTime) / 1000);
+      elapsedMs += dt * 1000;
+      runSchedule(elapsedMs / 1000);
       const checkBounds = time >= boundsCheckAt;
       if (checkBounds) boundsCheckAt = time + 500;
       const children = group.getChildren();
@@ -515,6 +521,7 @@
       group, config, arena, routes, types: ENEMY_TYPES,
       spawn, spawnMany, update, setDifficulty, getModifiers,
       isArmed, describe, count, clear,
+      elapsed: () => elapsedMs / 1000,
       introducedTypes: () => Array.from(introduced)
     };
   }

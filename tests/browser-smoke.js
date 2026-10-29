@@ -87,11 +87,25 @@ async function main() {
       true;`);
 
     const started = Date.now();
-    const atSecond = async s => { const wait = started + s * 1000 - Date.now(); if (wait > 0) await sleep(wait); };
+    let pausedMs = 0; // wall time spent paused; round time = wall time - pausedMs
+    const atSecond = async s => { const wait = started + s * 1000 + pausedMs - Date.now(); if (wait > 0) await sleep(wait); };
 
     let e = await evaluate('__enemies()');
     check(e.length === 3 && e.every(x => x.type === 'drone'), `t=1.5s: three drones only (got ${e.map(x => x.type).join(',')})`);
     check(await evaluate('__scene().hud.text.includes("Time")'), 'HUD is rendering');
+
+    // Pause for 3 s at round time 4 s: the enemy schedule must freeze too.
+    if (await evaluate('!!__scene().pauser')) {
+      await atSecond(4);
+      await evaluate('__scene().pauser.pause(); true');
+      await sleep(3000);
+      await evaluate('__scene().pauser.resume(); true');
+      pausedMs = 3000;
+      await atSecond(6.5);
+      const roundClock = await evaluate('__scene().enemies.elapsed()');
+      check(roundClock < 7.5, `enemy clock froze during pause (round clock ${roundClock.toFixed(1)}s at wall ${((Date.now() - started) / 1000).toFixed(1)}s)`);
+      check(!(await evaluate('__enemies()')).some(x => x.type === 'chaser'), 'no chaser yet after the pause');
+    }
 
     await atSecond(10);
     e = await evaluate('__enemies()');
