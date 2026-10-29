@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH */
+/* global Phaser, COIN_DASH, PauseController */
 class CoinDash extends Phaser.Scene {
   constructor() { super('CoinDash'); }
 
@@ -35,6 +35,9 @@ class CoinDash extends Phaser.Scene {
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
+    this.pauser = new PauseController(this, { canPause: () => !this.finished });
+    // The deadline is wall-clock based, so push it back by however long the game was paused.
+    this.pauser.on('resume', pausedMs => { this.deadline += pausedMs; });
   }
 
   placeCoin() {
@@ -50,7 +53,7 @@ class CoinDash extends Phaser.Scene {
   }
 
   update() {
-    if (this.finished) return;
+    if (this.finished || this.pauser.paused) return;
     const dx = Number(this.cursors.right.isDown || this.keys.D.isDown)
       - Number(this.cursors.left.isDown || this.keys.A.isDown);
     const dy = Number(this.cursors.down.isDown || this.keys.S.isDown)
