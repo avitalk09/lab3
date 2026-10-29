@@ -1,4 +1,4 @@
-/* global Phaser, COIN_DASH, COIN_DASH_DIFFICULTY, COIN_DASH_SCREENS, DifficultySelect,
+/* global Phaser, COIN_DASH, COIN_DASH_ENEMIES, COIN_DASH_DIFFICULTY, COIN_DASH_SCREENS, DifficultySelect,
    PauseController, CoinDashEffects, CoinDashCombo */
 const sfx = () => window.CoinDashSound || {};
 class CoinDash extends Phaser.Scene {
@@ -36,15 +36,16 @@ class CoinDash extends Phaser.Scene {
     this.physics.add.existing(this.coin);
     this.coin.body.setCircle(9);
     this.placeCoin();
-    this.drones = this.physics.add.group();
-    const droneSpeed = COIN_DASH_DIFFICULTY.enemySpeed(c.droneSpeed);
-    for (let i = 0; i < c.droneCount; i++) {
-      const drone = this.add.rectangle(90 + i * 270, 100, 26, 26, c.colors.drone);
-      this.drones.add(drone);
-      drone.body.setCollideWorldBounds(true).setBounce(1, 1);
-      const angle = (35 + i * 105) * Math.PI / 180;
-      drone.body.setVelocity(Math.cos(angle) * droneSpeed, Math.sin(angle) * droneSpeed);
-    }
+    // Enemies are managed by enemies.js; the schedule in settings introduces
+    // each type over the round. The difficulty multiplier scales every enemy
+    // type. this.drones stays the group used for collisions.
+    this.enemies = COIN_DASH_ENEMIES.createEnemyManager(this, {
+      player: this.player,
+      modifiers: { speed: COIN_DASH_DIFFICULTY.multiplier() }
+    });
+    this.drones = this.enemies.group;
+    this.events.on('enemy-type-introduced', (type, label) => this.announce(`${label} incoming!`));
+    this.events.once('shutdown', () => this.events.off('enemy-type-introduced'));
     this.physics.add.overlap(this.player, this.coin, () => {
       if (this.finished) return;
       this.collectCoin();
@@ -52,13 +53,13 @@ class CoinDash extends Phaser.Scene {
       if (this.coins % 10 === 0) sfx().milestone?.(); else sfx().coin?.();
       this.placeCoin();
     });
-    this.physics.add.overlap(this.player, this.drones, () => {
+    this.physics.add.overlap(this.player, this.drones, (player, enemy) => {
       if (!this.finished) {
         this.effects.playerHit(this.player.x, this.player.y);
         sfx().hit?.();
       }
-      this.finish('A drone caught you!');
-    });
+      this.finish(`${this.enemies.describe(enemy)} caught you!`);
+    }, (player, enemy) => this.enemies.isArmed(enemy));
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = this.input.keyboard.addKeys('W,A,S,D,R');
     this.input.keyboard.on('keydown-R', () => this.scene.restart());
@@ -80,6 +81,16 @@ class CoinDash extends Phaser.Scene {
     } while (Phaser.Math.Distance.Between(x, y, this.player.x, this.player.y) < 60);
     this.coin.setPosition(x, y);
     this.coin.body.reset(x, y);
+  }
+
+  announce(message) {
+    const c = COIN_DASH;
+    const text = this.add.text(c.width / 2, 70, message,
+      { font: '20px monospace', color: '#ffffff' }).setOrigin(0.5).setAlpha(0);
+    this.tweens.add({
+      targets: text, alpha: { from: 0, to: 1 }, y: 60, duration: 250, yoyo: true, hold: 900,
+      onComplete: () => text.destroy()
+    });
   }
 
   collectCoin() {
@@ -133,7 +144,9 @@ class CoinDash extends Phaser.Scene {
 
   update(time, delta) {
     if (this.finished || this.pauser.paused) return;
-    // Advance by frame delta (not absolute time) so the combo freezes while the scene is paused.
+    // Enemies and the combo advance by frame delta (not absolute time) so both
+    // freeze while the scene is paused.
+    this.enemies.update(time, delta);
     this.combo.update(delta);
     this.updateComboHud();
     const dx = Number(this.cursors.right.isDown || this.keys.D.isDown)
