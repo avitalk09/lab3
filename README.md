@@ -41,7 +41,11 @@ laptops' JSON files together and save the combined HTML. Use the same time windo
 - `difficulty.js`: EASY / NORMAL / HARD modes, enemy-speed scaling helpers and localStorage persistence.
 - `difficulty-select.js`: the difficulty picker (standalone `DifficultySelect` scene, or `attachDifficultyPicker()` to embed in any menu).
 - `game.js`: scene, input, collisions, score and end-of-round behaviour.
+- `levels.js`: level manager (every 10 coins = next level), difficulty curve and the
+  `levelchange` event other modules can subscribe to.
 - `tests/enemies.test.js`: Node tests for the enemy module (`node --test tests/*.test.js`).
+- `tests/levels.test.js`: Node tests for the level manager; `tests/smoke.html`: headless-browser
+  smoke test of the whole game (see the comment at its top).
 - `vendor/phaser-3.90.0.min.js`: the pinned Phaser runtime, byte for byte the file published at
   `https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js`; `vendor/LICENSE.phaser.txt` is its MIT licence.
 

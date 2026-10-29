@@ -164,6 +164,7 @@ class GameOverScene extends Phaser.Scene {
     this.finalScore = data.score || 0;
     this.reason = data.reason || '';
     this.difficulty = data.difficulty || COIN_DASH_DIFFICULTY.getCurrentKey();
+    this.level = data.level || 0; // level reached (levels.js), if the game scene passed it
     this.previousBest = readBest();
     this.isBest = this.finalScore > this.previousBest;
     if (this.isBest) writeBest(this.finalScore);
@@ -188,7 +189,8 @@ class GameOverScene extends Phaser.Scene {
 
     neonText(this, cx, 152, this.reason.toUpperCase(), 18, NEON.white).setAlpha(0.8);
     const mode = COIN_DASH_DIFFICULTY.get(this.difficulty);
-    neonText(this, cx, 176, `DIFFICULTY: ${mode.label.toUpperCase()}`, 14, mode.colorCss).setAlpha(0.9);
+    const levelTag = this.level ? ` \u00b7 LEVEL ${this.level}` : '';
+    neonText(this, cx, 176, `DIFFICULTY: ${mode.label.toUpperCase()}${levelTag}`, 14, mode.colorCss).setAlpha(0.9);
     neonText(this, cx, 200, 'FINAL SCORE', 18, NEON.cyan);
 
     // Count the score up for a bit of arcade drama.

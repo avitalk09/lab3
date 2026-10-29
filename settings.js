@@ -7,6 +7,14 @@ window.COIN_DASH = {
   droneSpeed: 105,
   droneCount: 3,
   colors: { background: 0x101c31, player: 0x71e8ce, coin: 0xffd166, drone: 0xff657a },
+  // Level progression (see levels.js for every option and its default).
+  levels: {
+    coinsPerLevel: 10,          // coins collected (not score) per level
+    timeBonusSeconds: 5,        // extra seconds on the round timer at each level up
+    droneSpeedGrowth: 0.12,     // +12% enemy speed per level (all enemy types)
+    dronesAddedEveryLevels: 1,  // one extra enemy every N levels (enemies.maxEnemies still caps)
+    coinTimerFromLevel: 4       // from this level, coins relocate if not collected in time
+  },
   // Enemy roster. Anything omitted here falls back to the defaults in enemies.js.
   // droneSpeed / droneCount above still drive the original drone type.
   enemies: {
