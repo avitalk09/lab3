@@ -365,6 +365,7 @@
     setArena(index, opts = {}) {
       const n = ARENAS.length;
       index = ((Math.floor(Number(index) || 0) % n) + n) % n;
+      if (!this.scene.cameras || !this.scene.cameras.main) return this.index; // scene not running
       if (this.switching) { this.pending = index; return this.index; }
       if (index === this.index && this.theme) return this.index;
       const announce = opts.announce !== false;
